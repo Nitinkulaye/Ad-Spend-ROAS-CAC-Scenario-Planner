@@ -1,0 +1,6 @@
+{
+  "name": "Ad Spend & ROAS / CAC Scenario Planner",
+  "description": "Fintech-grade scenario modeler and sensitivity planner for ad spend, ROAS, blended CAC, unit economics, and profit targets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

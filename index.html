@@ -1,0 +1,2453 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ad Spend & ROAS / CAC Scenario Planner</title>
+    <meta name="description" content="Fintech-grade scenario modeler and sensitivity planner for ad spend, ROAS, blended CAC, unit economics, and profit targets." />
+    <meta property="og:title" content="Ad Spend & ROAS / CAC Scenario Planner" />
+    <meta property="og:description" content="Fintech-grade scenario modeler and sensitivity planner for ad spend, ROAS, blended CAC, unit economics, and profit targets." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS CDN with Custom Fintech Configuration -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              canvas: '#0B0F17',
+              surface: '#111827',
+              'surface-subtle': '#0E1522',
+              'surface-elevated': '#161F30',
+              'surface-hover': '#1B263B',
+              border: '#1F2937',
+              'border-subtle': 'rgba(255, 255, 255, 0.08)',
+              accent: '#3B82F6',
+              'accent-hover': '#2563EB',
+              profit: '#10B981',
+              'profit-dark': '#064E3B',
+              loss: '#F43F5E',
+              'loss-dark': '#4C0519',
+              warning: '#F59E0B'
+            },
+            fontFamily: {
+              sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+              mono: ['JetBrains Mono', 'ui-monospace', 'monospace']
+            }
+          }
+        }
+      };
+    </script>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <!-- html2pdf.js CDN for 100% Client-Side PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+      /* Base Resets & Typography */
+      body {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: #0B0F17;
+        color: #F3F4F6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .font-mono-numbers {
+        font-family: 'JetBrains Mono', monospace;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Custom Range Slider */
+      input[type=range] {
+        -webkit-appearance: none;
+        background: #1F2937;
+        height: 6px;
+        border-radius: 3px;
+        outline: none;
+      }
+      input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #3B82F6;
+        cursor: pointer;
+        border: 2px solid #0B0F17;
+        box-shadow: 0 0 0 1px #1F2937;
+        transition: transform 0.1s ease, background-color 0.15s ease;
+      }
+      input[type=range]::-webkit-slider-thumb:hover {
+        background: #60A5FA;
+        transform: scale(1.15);
+      }
+      input[type=range]::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #3B82F6;
+        cursor: pointer;
+        border: 2px solid #0B0F17;
+        box-shadow: 0 0 0 1px #1F2937;
+      }
+
+      /* Hide number input spinners for clean look */
+      input[type=number]::-webkit-inner-spin-button,
+      input[type=number]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type=number] {
+        -moz-appearance: textfield;
+      }
+
+      /* Toast animation */
+      @keyframes toastIn {
+        from { transform: translateY(16px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      .animate-toast {
+        animation: toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0B0F17;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #1F2937;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #374151;
+      }
+
+      /* Print Stylesheet for Executive PDF / Paper Export */
+      @media print {
+        body {
+          background-color: #FFFFFF !important;
+          color: #0F172A !important;
+          font-size: 11pt;
+        }
+        .no-print, input[type=range], #toast-container, header button, .interactive-toggle {
+          display: none !important;
+        }
+        .print-only {
+          display: block !important;
+        }
+        .bg-canvas, .bg-surface, .bg-surface-subtle, .bg-surface-elevated {
+          background-color: #FFFFFF !important;
+          color: #0F172A !important;
+          border-color: #CBD5E1 !important;
+        }
+        .border-border, .border-border-subtle, .border-\[\#1F2937\] {
+          border-color: #E2E8F0 !important;
+        }
+        .text-slate-400, .text-slate-300, .text-slate-500 {
+          color: #475569 !important;
+        }
+        .text-white {
+          color: #0F172A !important;
+        }
+        .text-profit {
+          color: #047857 !important;
+        }
+        .text-loss {
+          color: #BE123C !important;
+        }
+        .chart-container {
+          page-break-inside: avoid;
+        }
+        .print-matrix {
+          width: 100% !important;
+          border-collapse: collapse !important;
+        }
+        .print-matrix td, .print-matrix th {
+          border: 1px solid #CBD5E1 !important;
+          padding: 6px 10px !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-canvas text-slate-100 min-h-screen flex flex-col antialiased selection:bg-accent selection:text-white">
+
+    <!-- Top Bar Navigation Contract -->
+    <header class="border-b border-border bg-canvas/90 backdrop-blur sticky top-0 z-40 px-4 lg:px-8 py-3.5 transition-colors">
+      <div class="max-w-[1440px] mx-auto flex items-center justify-between gap-4">
+        <!-- Zone 1: Wordmark Brand -->
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center text-accent shrink-0 shadow-sm">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+          <div class="flex flex-col">
+            <span class="font-semibold text-base text-white tracking-tight leading-tight">Ad Spend & ROAS Engine</span>
+            <div class="flex items-center gap-1.5 text-xs text-slate-400 font-normal">
+              <span>Fintech Unit Economics</span>
+              <span aria-hidden="true">·</span>
+              <span>Sensitivity Matrix</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zone 2: Preset Scenarios & Currency Switcher -->
+        <div class="hidden md:flex items-center gap-2">
+          <!-- Preset Selector -->
+          <div class="flex items-center bg-surface border border-border rounded-lg p-0.5 text-xs text-slate-300">
+            <span class="px-2.5 py-1 text-slate-500 font-medium text-[11px] uppercase tracking-wider">Presets</span>
+            <button onclick="applyPreset('dtc')" class="preset-btn px-2.5 py-1 rounded hover:text-white hover:bg-surface-elevated transition-colors" data-preset="dtc">DTC E-Commerce</button>
+            <button onclick="applyPreset('saas')" class="preset-btn px-2.5 py-1 rounded hover:text-white hover:bg-surface-elevated transition-colors" data-preset="saas">B2B SaaS</button>
+            <button onclick="applyPreset('highticket')" class="preset-btn px-2.5 py-1 rounded hover:text-white hover:bg-surface-elevated transition-colors" data-preset="highticket">High-Ticket Lead</button>
+            <button onclick="applyPreset('app')" class="preset-btn px-2.5 py-1 rounded hover:text-white hover:bg-surface-elevated transition-colors" data-preset="app">Mobile App</button>
+          </div>
+
+          <!-- Currency Selector -->
+          <div class="flex items-center bg-surface border border-border rounded-lg p-0.5 text-xs font-mono">
+            <button onclick="setCurrency('USD')" class="curr-btn px-2.5 py-1 rounded font-medium transition-colors" data-curr="USD">$ USD</button>
+            <button onclick="setCurrency('EUR')" class="curr-btn px-2.5 py-1 rounded font-medium transition-colors text-slate-400 hover:text-white" data-curr="EUR">€ EUR</button>
+            <button onclick="setCurrency('GBP')" class="curr-btn px-2.5 py-1 rounded font-medium transition-colors text-slate-400 hover:text-white" data-curr="GBP">£ GBP</button>
+            <button onclick="setCurrency('INR')" class="curr-btn px-2.5 py-1 rounded font-medium transition-colors text-slate-400 hover:text-white" data-curr="INR">₹ INR</button>
+          </div>
+        </div>
+
+        <!-- Zone 3: Actions -->
+        <div class="flex items-center gap-2">
+          <button
+            onclick="copyExecutiveSummary()"
+            title="Copy formatted executive briefing to clipboard"
+            class="px-3 py-1.5 text-xs font-medium text-slate-200 bg-surface border border-border rounded-lg hover:bg-surface-hover hover:border-slate-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+          >
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+            </svg>
+            <span class="hidden sm:inline">Copy Brief</span>
+          </button>
+
+          <button
+            onclick="openExecutiveModal()"
+            title="Preview executive printable scenario briefing"
+            class="px-3 py-1.5 text-xs font-medium text-slate-200 bg-surface border border-border rounded-lg hover:bg-surface-hover hover:border-slate-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+          >
+            <svg class="w-3.5 h-3.5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span class="hidden md:inline">Executive Report</span>
+          </button>
+
+          <button
+            onclick="generateAndDownloadPDF()"
+            title="Download executive PDF document immediately"
+            class="px-3 py-1.5 text-xs font-medium text-white bg-accent hover:bg-accent-hover rounded-lg transition-all flex items-center gap-1.5 shadow-sm shadow-accent/20 active:scale-95"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span>Download PDF</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Segmented View Tabs (hidden on desktop) -->
+    <div class="md:hidden border-b border-border bg-surface px-4 py-2 flex items-center justify-between no-print">
+      <div class="flex items-center gap-1 w-full bg-canvas p-1 rounded-lg border border-border">
+        <button id="tab-btn-inputs" onclick="switchMobileTab('inputs')" class="flex-1 py-1.5 text-xs font-medium rounded-md bg-surface text-white shadow-sm transition-all text-center">Parameters</button>
+        <button id="tab-btn-results" onclick="switchMobileTab('results')" class="flex-1 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition-all text-center">Scenarios & Forecast</button>
+      </div>
+    </div>
+
+    <!-- Print Only Executive Header (Visible in @media print) -->
+    <div class="hidden print-only max-w-[1440px] mx-auto p-6 border-b border-slate-300 mb-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Paid Acquisition & Unit Economics Scenario Brief</h1>
+          <p class="text-xs text-slate-600 mt-1">Generated by Ad Spend & ROAS FinTech Planner · Confidential Executive Model</p>
+        </div>
+        <div class="text-right text-xs text-slate-600 font-mono">
+          <p>Date: <span id="print-date"></span></p>
+          <p>Currency: <span id="print-currency">USD ($)</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 max-w-[1440px] w-full mx-auto p-4 sm:p-6 lg:p-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+
+        <!-- ========================================== -->
+        <!-- LEFT COLUMN: Input Control Panel (Sticky) -->
+        <!-- ========================================== -->
+        <section id="panel-inputs" class="block lg:block lg:col-span-5 space-y-6">
+          <div class="bg-surface border border-border rounded-xl p-5 sm:p-6 space-y-6 shadow-sm">
+
+            <!-- Panel Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-border">
+              <div class="space-y-0.5">
+                <h2 class="text-sm font-semibold text-white tracking-wide">Acquisition Model Parameters</h2>
+                <div class="flex items-center gap-2 text-xs text-slate-400">
+                  <span>Continuous Sensitivity Sync</span>
+                  <span aria-hidden="true">·</span>
+                  <span id="model-mode-text">Cost Per Click Mode</span>
+                </div>
+              </div>
+              <button
+                onclick="resetToDefaults()"
+                title="Reset all parameters to baseline standard"
+                class="text-xs text-slate-400 hover:text-slate-200 transition-colors flex items-center gap-1.5 py-1 px-2 rounded hover:bg-surface-elevated"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Reset</span>
+              </button>
+            </div>
+
+            <!-- INPUT 1: Monthly Ad Budget -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label for="input-spend" class="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                  <span>Monthly Ad Budget</span>
+                </label>
+                <div class="flex items-center gap-1 bg-surface-subtle border border-border rounded-md px-2 py-1 focus-within:border-accent">
+                  <span class="curr-symbol text-xs text-slate-400 font-mono font-medium">$</span>
+                  <input
+                    type="number"
+                    id="input-spend"
+                    min="100"
+                    max="1000000"
+                    step="250"
+                    value="10000"
+                    class="w-24 bg-transparent text-right font-mono text-xs font-semibold text-white outline-none"
+                  />
+                </div>
+              </div>
+              <input
+                type="range"
+                id="slider-spend"
+                min="500"
+                max="100000"
+                step="250"
+                value="10000"
+                class="w-full"
+              />
+              <div class="flex justify-between text-[11px] text-slate-500 font-mono">
+                <span><span class="curr-symbol">$</span>500</span>
+                <span><span class="curr-symbol">$</span>50,000</span>
+                <span><span class="curr-symbol">$</span>100,000+</span>
+              </div>
+            </div>
+
+            <!-- INPUT 2: Traffic Cost (CPC vs CPM+CTR Toggle) -->
+            <div class="space-y-2.5 pt-2 border-t border-border/70">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <label for="input-cpc" class="text-xs font-medium text-slate-300">Traffic Cost</label>
+                  <div class="flex items-center bg-surface-subtle border border-border rounded p-0.5 text-[11px]">
+                    <button id="toggle-mode-cpc" onclick="setTrafficMode('cpc')" class="px-2 py-0.5 rounded bg-surface-elevated text-white font-medium transition-all">Direct CPC</button>
+                    <button id="toggle-mode-cpm" onclick="setTrafficMode('cpm')" class="px-2 py-0.5 rounded text-slate-400 hover:text-white transition-all">CPM + CTR</button>
+                  </div>
+                </div>
+
+                <!-- CPC Display Box -->
+                <div id="cpc-direct-box" class="flex items-center gap-1 bg-surface-subtle border border-border rounded-md px-2 py-1 focus-within:border-accent">
+                  <span class="curr-symbol text-xs text-slate-400 font-mono font-medium">$</span>
+                  <input
+                    type="number"
+                    id="input-cpc"
+                    min="0.05"
+                    max="50"
+                    step="0.05"
+                    value="1.85"
+                    class="w-16 bg-transparent text-right font-mono text-xs font-semibold text-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <!-- Direct CPC Slider -->
+              <div id="cpc-slider-container" class="space-y-1">
+                <input
+                  type="range"
+                  id="slider-cpc"
+                  min="0.10"
+                  max="15.00"
+                  step="0.05"
+                  value="1.85"
+                  class="w-full"
+                />
+                <div class="flex justify-between text-[11px] text-slate-500 font-mono">
+                  <span><span class="curr-symbol">$</span>0.10</span>
+                  <span><span class="curr-symbol">$</span>7.50</span>
+                  <span><span class="curr-symbol">$</span>15.00</span>
+                </div>
+              </div>
+
+              <!-- CPM + CTR Sub-Panel (Hidden by default) -->
+              <div id="cpm-ctr-container" class="hidden bg-surface-subtle border border-border rounded-lg p-3 space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="space-y-1.5">
+                    <div class="flex justify-between items-center text-[11px] text-slate-400">
+                      <span>CPM</span>
+                      <div class="flex items-center gap-0.5 bg-surface border border-border rounded px-1.5 py-0.5 focus-within:border-accent">
+                        <span class="curr-symbol font-mono text-[10px] text-slate-400">$</span>
+                        <input
+                          type="number"
+                          id="input-cpm"
+                          min="1"
+                          max="250"
+                          step="0.5"
+                          value="22"
+                          class="w-12 bg-transparent text-right font-mono text-xs font-semibold text-white outline-none"
+                        />
+                      </div>
+                    </div>
+                    <input type="range" id="slider-cpm" min="2" max="120" step="1" value="22" class="w-full" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <div class="flex justify-between items-center text-[11px] text-slate-400">
+                      <span>CTR</span>
+                      <div class="flex items-center gap-0.5 bg-surface border border-border rounded px-1.5 py-0.5 focus-within:border-accent">
+                        <input
+                          type="number"
+                          id="input-ctr"
+                          min="0.1"
+                          max="20"
+                          step="0.05"
+                          value="1.20"
+                          class="w-12 bg-transparent text-right font-mono text-xs font-semibold text-white outline-none"
+                        />
+                        <span class="font-mono text-[10px] text-slate-400">%</span>
+                      </div>
+                    </div>
+                    <input type="range" id="slider-ctr" min="0.2" max="6.0" step="0.05" value="1.20" class="w-full" />
+                  </div>
+                </div>
+                <div class="text-[11px] text-slate-400 flex items-center justify-between pt-1 border-t border-border/50">
+                  <span>Effective CPC Derivation:</span>
+                  <span class="font-mono text-accent font-semibold"><span class="curr-symbol">$</span><span id="derived-cpc-display">1.83</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- INPUT 3: Landing Page Conversion Rate -->
+            <div class="space-y-2 pt-2 border-t border-border/70">
+              <div class="flex items-center justify-between">
+                <div class="space-y-0.5">
+                  <label for="input-cvr" class="text-xs font-medium text-slate-300">Conversion Rate</label>
+                  <p class="text-[11px] text-slate-500">Ad Click to Lead or Cart</p>
+                </div>
+                <div class="flex items-center gap-1 bg-surface-subtle border border-border rounded-md px-2 py-1 focus-within:border-accent">
+                  <input
+                    type="number"
+                    id="input-cvr"
+                    min="0.1"
+                    max="50"
+                    step="0.1"
+                    value="3.2"
+                    class="w-16 bg-transparent text-right font-mono text-xs font-semibold text-white outline-none"
+                  />
+                  <span class="text-xs text-slate-400 font-mono font-medium">%</span>
+                </div>
+              </div>
+              <input
+                type="range"
+                id="slider-cvr"
+                min="0.2"
+                max="12.0"
+                step="0.1"
+                value="3.2"
+                class="w-full"
+              />
+              <div class="flex justify-between text-[11px] text-slate-500 font-mono">
+                <span>0.2%</span>
+                <span>6.0%</span>
+                <span>12.0%</span>
+              </div>
+            </div>
+
+            <!-- INPUT 4: Lead-to-Customer Close Rate -->
+            <div class="space-y-2 pt-2 border-t border-border/70">
+              <div class="flex items-center justify-between">
+                <div class="space-y-0.5">
+                  <label for="input-close" class="text-xs font-medium text-slate-300">Close / Final Purchase Rate</label>
+                  <p class="text-[11px] text-slate-500">Set to 100% for Direct Checkout</p>
+                </div>
+                <div class="flex items-center gap-1 bg-surface-subtle border border-border rounded-md px-2 py-1 focus-within:border-accent">
+                  <input
+                    type="number"
+                    id="input-close"
+                    min="1"
+                    max="100"
+                    step="1"
+                    value="100"
+                    class="w-14 bg-transparent text-right font-mono text-xs font-semibold text-white outline-none"
+                  />
+                  <span class="text-xs text-slate-400 font-mono font-medium">%</span>
+                </div>
+              </div>
+              <input
+                type="range"
+                id="slider-close"
+                min="1"
+                max="100"
+                step="1"
+                value="100"
+                class="w-full"
+              />
+              <div class="flex justify-between text-[11px] text-slate-500 font-mono">
+                <span>1% (B2B Lead)</span>
+                <span>50%</span>
+                <span>100% (Direct DTC)</span>
+              </div>
+            </div>
+
+            <!-- INPUT 5: Average Order Value / LTV -->
+            <div class="space-y-2 pt-2 border-t border-border/70">
+              <div class="flex items-center justify-between">
+                <div class="space-y-0.5">
+                  <label for="input-aov" class="text-xs font-medium text-slate-300">Average Order Value (AOV / LTV)</label>
+                  <p class="text-[11px] text-slate-500">Gross revenue per acquired buyer</p>
+                </div>
+                <div class="flex items-center gap-1 bg-surface-subtle border border-border rounded-md px-2 py-1 focus-within:border-accent">
+                  <span class="curr-symbol text-xs text-slate-400 font-mono font-medium">$</span>
+                  <input
+                    type="number"
+                    id="input-aov"
+                    min="5"
+                    max="50000"
+                    step="5"
+                    value="125"
+                    class="w-20 bg-transparent text-right font-mono text-xs font-semibold text-white outline-none"
+                  />
+                </div>
+              </div>
+              <input
+                type="range"
+                id="slider-aov"
+                min="15"
+                max="1500"
+                step="5"
+                value="125"
+                class="w-full"
+              />
+              <div class="flex justify-between text-[11px] text-slate-500 font-mono">
+                <span><span class="curr-symbol">$</span>15</span>
+                <span><span class="curr-symbol">$</span>750</span>
+                <span><span class="curr-symbol">$</span>1,500</span>
+              </div>
+            </div>
+
+            <!-- INPUT 6: Cost of Goods Sold (COGS) % -->
+            <div class="space-y-2 pt-2 border-t border-border/70">
+              <div class="flex items-center justify-between">
+                <div class="space-y-0.5">
+                  <label for="input-cogs" class="text-xs font-medium text-slate-300">COGS / Delivery Cost</label>
+                  <p class="text-[11px] text-slate-500">Product manufacturing, shipping, or fulfillment %</p>
+                </div>
+                <div class="flex items-center gap-1 bg-surface-subtle border border-border rounded-md px-2 py-1 focus-within:border-accent">
+                  <input
+                    type="number"
+                    id="input-cogs"
+                    min="0"
+                    max="95"
+                    step="1"
+                    value="30"
+                    class="w-14 bg-transparent text-right font-mono text-xs font-semibold text-white outline-none"
+                  />
+                  <span class="text-xs text-slate-400 font-mono font-medium">%</span>
+                </div>
+              </div>
+              <input
+                type="range"
+                id="slider-cogs"
+                min="0"
+                max="90"
+                step="1"
+                value="30"
+                class="w-full"
+              />
+              <div class="flex justify-between text-[11px] text-slate-500 font-mono">
+                <span>0% (Digital)</span>
+                <span>45%</span>
+                <span>90% (High Material)</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Unit Economics Quick Benchmark Card -->
+          <div class="bg-surface-subtle border border-border rounded-xl p-4 space-y-3">
+            <div class="flex items-center justify-between text-xs pb-2 border-b border-border/70">
+              <span class="font-medium text-slate-300">Unit Contribution Benchmark</span>
+              <span class="text-slate-500 font-mono text-[11px]">Per Single Order</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <div class="text-slate-400 text-[11px]">Gross Margin Before Ad</div>
+                <div class="font-mono text-sm font-semibold text-white mt-0.5" id="unit-gross-margin">$87.50 (70%)</div>
+              </div>
+              <div>
+                <div class="text-slate-400 text-[11px]">Max Allowable CAC</div>
+                <div class="font-mono text-sm font-semibold text-accent mt-0.5" id="unit-max-allowable-cac">$87.50</div>
+              </div>
+              <div>
+                <div class="text-slate-400 text-[11px]">Break-Even Gross ROAS</div>
+                <div class="font-mono text-sm font-semibold text-white mt-0.5" id="unit-breakeven-roas">1.43x</div>
+              </div>
+              <div>
+                <div class="text-slate-400 text-[11px]">Acquisition Margin</div>
+                <div class="font-mono text-sm font-semibold mt-0.5" id="unit-payback-margin">+$29.69</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ============================================== -->
+        <!-- RIGHT COLUMN: Scenarios, Sensitivity & Targets -->
+        <!-- ============================================== -->
+        <section id="panel-results" class="hidden lg:block lg:col-span-7 space-y-6">
+
+          <!-- Primary Metric Badges Grid (Baseline Scenario) -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <!-- Metric 1: Blended CAC -->
+            <div class="bg-surface border border-border rounded-xl p-4 space-y-1">
+              <div class="text-[11px] font-medium text-slate-400">Blended CAC</div>
+              <div class="font-mono text-xl sm:text-2xl font-bold tracking-tight text-white" id="stat-cac">$57.81</div>
+              <div class="text-[11px] text-slate-400 flex items-center justify-between pt-1 border-t border-border/60">
+                <span>vs Max Break-Even</span>
+                <span id="cac-status-tag" class="font-mono font-medium text-profit">Safe Margin</span>
+              </div>
+            </div>
+
+            <!-- Metric 2: Gross ROAS -->
+            <div class="bg-surface border border-border rounded-xl p-4 space-y-1">
+              <div class="text-[11px] font-medium text-slate-400">Gross ROAS</div>
+              <div class="font-mono text-xl sm:text-2xl font-bold tracking-tight text-white" id="stat-gross-roas">2.16x</div>
+              <div class="text-[11px] text-slate-400 flex items-center justify-between pt-1 border-t border-border/60">
+                <span>Min Required</span>
+                <span class="font-mono text-slate-300" id="stat-breakeven-roas-badge">1.43x</span>
+              </div>
+            </div>
+
+            <!-- Metric 3: Net Profit -->
+            <div class="bg-surface border border-border rounded-xl p-4 space-y-1">
+              <div class="text-[11px] font-medium text-slate-400">Net Profit</div>
+              <div class="font-mono text-xl sm:text-2xl font-bold tracking-tight text-profit" id="stat-net-profit">+$5,135.14</div>
+              <div class="text-[11px] text-slate-400 flex items-center justify-between pt-1 border-t border-border/60">
+                <span>Net Margin %</span>
+                <span class="font-mono font-medium text-profit" id="stat-net-margin">23.8%</span>
+              </div>
+            </div>
+
+            <!-- Metric 4: Total Revenue -->
+            <div class="bg-surface border border-border rounded-xl p-4 space-y-1">
+              <div class="text-[11px] font-medium text-slate-400">Gross Revenue</div>
+              <div class="font-mono text-xl sm:text-2xl font-bold tracking-tight text-white" id="stat-gross-revenue">$21,621.62</div>
+              <div class="text-[11px] text-slate-400 flex items-center justify-between pt-1 border-t border-border/60">
+                <span>Customers</span>
+                <span class="font-mono text-slate-300" id="stat-customers">173</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Side-by-Side 3-Scenario Comparison Matrix -->
+          <div class="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
+            <div class="px-5 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h3 class="text-sm font-semibold text-white tracking-tight">Three-Scenario Sensitivity Matrix</h3>
+                <div class="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                  <span>Stress-Tested Forecasting</span>
+                  <span aria-hidden="true">·</span>
+                  <span>Simultaneous Volatility Analysis</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 text-xs text-slate-400">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-loss"></span>Conservative</span>
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-accent"></span>Baseline</span>
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-profit"></span>Optimized</span>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left border-collapse print-matrix">
+                <thead>
+                  <tr class="border-b border-border bg-surface-subtle text-slate-400 font-medium">
+                    <th class="py-3 px-4">Metric</th>
+                    <th class="py-3 px-4 text-right">
+                      <div class="text-slate-300 font-semibold">Conservative</div>
+                      <div class="text-[11px] font-normal text-slate-400">-20% CVR · +15% CPC</div>
+                    </th>
+                    <th class="py-3 px-4 text-right bg-accent/5 border-x border-border">
+                      <div class="text-accent font-semibold">Baseline Model</div>
+                      <div class="text-[11px] font-normal text-slate-400">User Set Parameters</div>
+                    </th>
+                    <th class="py-3 px-4 text-right">
+                      <div class="text-emerald-400 font-semibold">Optimized</div>
+                      <div class="text-[11px] font-normal text-slate-400">+25% CVR · -10% CPC</div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border/60 font-mono-numbers">
+                  <!-- Row 1: Clicks -->
+                  <tr class="hover:bg-surface-elevated/40 transition-colors">
+                    <td class="py-2.5 px-4 font-sans text-slate-300">Total Ad Clicks</td>
+                    <td class="py-2.5 px-4 text-right text-slate-300" id="matrix-cons-clicks">4,699</td>
+                    <td class="py-2.5 px-4 text-right text-white font-medium bg-accent/5 border-x border-border" id="matrix-base-clicks">5,405</td>
+                    <td class="py-2.5 px-4 text-right text-slate-300" id="matrix-opt-clicks">6,006</td>
+                  </tr>
+
+                  <!-- Row 2: Customer Acquisitions -->
+                  <tr class="hover:bg-surface-elevated/40 transition-colors">
+                    <td class="py-2.5 px-4 font-sans text-slate-300">Paid Customers</td>
+                    <td class="py-2.5 px-4 text-right text-slate-300" id="matrix-cons-cust">120</td>
+                    <td class="py-2.5 px-4 text-right text-white font-medium bg-accent/5 border-x border-border" id="matrix-base-cust">173</td>
+                    <td class="py-2.5 px-4 text-right text-slate-300" id="matrix-opt-cust">240</td>
+                  </tr>
+
+                  <!-- Row 3: Blended CAC -->
+                  <tr class="hover:bg-surface-elevated/40 transition-colors">
+                    <td class="py-2.5 px-4 font-sans text-slate-300">Blended CAC</td>
+                    <td class="py-2.5 px-4 text-right text-rose-400 font-semibold" id="matrix-cons-cac">$83.10</td>
+                    <td class="py-2.5 px-4 text-right text-white font-semibold bg-accent/5 border-x border-border" id="matrix-base-cac">$57.81</td>
+                    <td class="py-2.5 px-4 text-right text-emerald-400 font-semibold" id="matrix-opt-cac">$41.62</td>
+                  </tr>
+
+                  <!-- Row 4: Gross Revenue -->
+                  <tr class="hover:bg-surface-elevated/40 transition-colors">
+                    <td class="py-2.5 px-4 font-sans text-slate-300">Gross Revenue</td>
+                    <td class="py-2.5 px-4 text-right text-slate-300" id="matrix-cons-rev">$15,038.54</td>
+                    <td class="py-2.5 px-4 text-right text-white font-medium bg-accent/5 border-x border-border" id="matrix-base-rev">$21,621.62</td>
+                    <td class="py-2.5 px-4 text-right text-slate-300" id="matrix-opt-rev">$30,030.03</td>
+                  </tr>
+
+                  <!-- Row 5: Gross ROAS -->
+                  <tr class="hover:bg-surface-elevated/40 transition-colors">
+                    <td class="py-2.5 px-4 font-sans text-slate-300">Gross ROAS</td>
+                    <td class="py-2.5 px-4 text-right text-slate-300 font-semibold" id="matrix-cons-groas">1.50x</td>
+                    <td class="py-2.5 px-4 text-right text-white font-semibold bg-accent/5 border-x border-border" id="matrix-base-groas">2.16x</td>
+                    <td class="py-2.5 px-4 text-right text-emerald-400 font-semibold" id="matrix-opt-groas">3.00x</td>
+                  </tr>
+
+                  <!-- Row 6: Net ROAS (True Return) -->
+                  <tr class="hover:bg-surface-elevated/40 transition-colors">
+                    <td class="py-2.5 px-4 font-sans text-slate-300">
+                      <div>Net ROAS (Margin / Spend)</div>
+                    </td>
+                    <td class="py-2.5 px-4 text-right text-slate-300" id="matrix-cons-nroas">1.05x</td>
+                    <td class="py-2.5 px-4 text-right text-white font-medium bg-accent/5 border-x border-border" id="matrix-base-nroas">1.51x</td>
+                    <td class="py-2.5 px-4 text-right text-emerald-400" id="matrix-opt-nroas">2.10x</td>
+                  </tr>
+
+                  <!-- Row 7: Net Monthly Profit (High-impact row) -->
+                  <tr class="bg-surface-subtle/80 hover:bg-surface-elevated transition-colors font-semibold">
+                    <td class="py-3 px-4 font-sans text-white">Net Monthly Profit</td>
+                    <td class="py-3 px-4 text-right" id="matrix-cons-profit">+$526.98</td>
+                    <td class="py-3 px-4 text-right bg-accent/10 border-x border-border text-base" id="matrix-base-profit">+$5,135.14</td>
+                    <td class="py-3 px-4 text-right text-emerald-400 text-base" id="matrix-opt-profit">+$11,021.02</td>
+                  </tr>
+
+                  <!-- Row 8: Payback Margin per Buyer -->
+                  <tr class="hover:bg-surface-elevated/40 transition-colors">
+                    <td class="py-2.5 px-4 font-sans text-slate-300">Unit Payback Margin</td>
+                    <td class="py-2.5 px-4 text-right text-slate-300" id="matrix-cons-payback">+$4.40</td>
+                    <td class="py-2.5 px-4 text-right text-white bg-accent/5 border-x border-border" id="matrix-base-payback">+$29.69</td>
+                    <td class="py-2.5 px-4 text-right text-emerald-400" id="matrix-opt-payback">+$45.88</td>
+                  </tr>
+
+                  <!-- Row 9: Break-Even ROAS Threshold -->
+                  <tr class="hover:bg-surface-elevated/40 transition-colors border-t border-border/40 text-slate-400">
+                    <td class="py-2.5 px-4 font-sans text-slate-400">Break-Even Gross ROAS Cap</td>
+                    <td class="py-2.5 px-4 text-right font-mono" id="matrix-cons-beroas">1.43x</td>
+                    <td class="py-2.5 px-4 text-right font-mono bg-accent/5 border-x border-border text-slate-300" id="matrix-base-beroas">1.43x</td>
+                    <td class="py-2.5 px-4 text-right font-mono" id="matrix-opt-beroas">1.43x</td>
+                  </tr>
+
+                  <!-- Row 10: Break-Even Sales Needed -->
+                  <tr class="hover:bg-surface-elevated/40 transition-colors text-slate-400">
+                    <td class="py-2.5 px-4 font-sans text-slate-400">Break-Even Orders to Cover Spend</td>
+                    <td class="py-2.5 px-4 text-right font-mono" id="matrix-cons-beorders">115</td>
+                    <td class="py-2.5 px-4 text-right font-mono bg-accent/5 border-x border-border text-slate-300" id="matrix-base-beorders">115</td>
+                    <td class="py-2.5 px-4 text-right font-mono" id="matrix-opt-beorders">115</td>
+                  </tr>
+
+                  <!-- Row 11: Break-Even Gross Revenue Target -->
+                  <tr class="hover:bg-surface-elevated/40 transition-colors text-slate-400">
+                    <td class="py-2.5 px-4 font-sans text-slate-400">Break-Even Gross Revenue</td>
+                    <td class="py-2.5 px-4 text-right font-mono" id="matrix-cons-berev">$14,285.71</td>
+                    <td class="py-2.5 px-4 text-right font-mono bg-accent/5 border-x border-border text-slate-300" id="matrix-base-berev">$14,285.71</td>
+                    <td class="py-2.5 px-4 text-right font-mono" id="matrix-opt-berev">$14,285.71</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Sensitivity Chart: Spend vs Net Profit Curve -->
+          <div class="bg-surface border border-border rounded-xl p-5 shadow-sm space-y-4 chart-container">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h3 class="text-sm font-semibold text-white tracking-tight">Spend vs. Profit Sensitivity Curve</h3>
+                <div class="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                  <span>Marginal Scalability at Current Unit Economics</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-emerald-400"></span>Net Profit</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-blue-500"></span>Gross Revenue</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-slate-500"></span>Ad Budget</span>
+              </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative h-64 sm:h-72 w-full">
+              <canvas id="sensitivity-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Target Reverse-Engineer Calculator Sub-Panel -->
+          <div class="bg-surface border border-border rounded-xl p-5 space-y-4 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-border gap-2">
+              <div>
+                <h3 class="text-sm font-semibold text-white tracking-tight">Target Reverse-Engineer Engine</h3>
+                <p class="text-xs text-slate-400">Solve for required inputs to hit critical business milestones</p>
+              </div>
+              <div class="flex items-center bg-surface-subtle border border-border rounded-lg p-0.5 text-xs">
+                <button id="rev-tab-profit" onclick="switchReverseMode('profit')" class="px-3 py-1 rounded bg-surface-elevated text-white font-medium transition-all">Solve for Profit Goal</button>
+                <button id="rev-tab-roas" onclick="switchReverseMode('roas')" class="px-3 py-1 rounded text-slate-400 hover:text-white transition-all">Solve for Target ROAS</button>
+              </div>
+            </div>
+
+            <!-- Reverse Mode A: Target Net Profit -->
+            <div id="rev-panel-profit" class="space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-subtle border border-border rounded-lg p-3">
+                <div class="space-y-0.5">
+                  <span class="text-xs font-medium text-slate-200">Desired Monthly Net Profit Goal</span>
+                  <p class="text-[11px] text-slate-400">After all ad spend and COGS deductions</p>
+                </div>
+                <div class="flex items-center gap-1 bg-surface border border-border rounded-md px-3 py-1.5 focus-within:border-accent">
+                  <span class="curr-symbol text-xs text-slate-400 font-mono font-medium">$</span>
+                  <input
+                    type="number"
+                    id="target-profit-input"
+                    min="100"
+                    max="1000000"
+                    step="500"
+                    value="15000"
+                    class="w-28 bg-transparent text-right font-mono text-sm font-semibold text-white outline-none"
+                    oninput="recalculateReverseEngine()"
+                  />
+                </div>
+              </div>
+
+              <!-- Reverse Engineered Milestones Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="bg-surface-subtle border border-border rounded-lg p-3 space-y-1">
+                  <div class="text-[11px] text-slate-400">Required Conversion Rate</div>
+                  <div class="font-mono text-base font-bold text-accent" id="rev-req-cvr">5.26%</div>
+                  <div class="text-[10px] text-slate-400" id="rev-cvr-delta">+2.06% from current</div>
+                </div>
+
+                <div class="bg-surface-subtle border border-border rounded-lg p-3 space-y-1">
+                  <div class="text-[11px] text-slate-400">Max Allowable CPC</div>
+                  <div class="font-mono text-base font-bold text-accent" id="rev-req-cpc">$1.12</div>
+                  <div class="text-[10px] text-slate-400" id="rev-cpc-delta">-$0.73 from current</div>
+                </div>
+
+                <div class="bg-surface-subtle border border-border rounded-lg p-3 space-y-1">
+                  <div class="text-[11px] text-slate-400">Required Ad Budget (at current efficiency)</div>
+                  <div class="font-mono text-base font-bold text-white" id="rev-req-spend">$29,211</div>
+                  <div class="text-[10px] text-slate-400" id="rev-spend-delta">To hit $15,000 net profit</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reverse Mode B: Target ROAS (Hidden by default) -->
+            <div id="rev-panel-roas" class="hidden space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-subtle border border-border rounded-lg p-3">
+                <div class="space-y-0.5">
+                  <span class="text-xs font-medium text-slate-200">Desired Target Gross ROAS</span>
+                  <p class="text-[11px] text-slate-400">Multiple of gross revenue generated per ad dollar spent</p>
+                </div>
+                <div class="flex items-center gap-1 bg-surface border border-border rounded-md px-3 py-1.5 focus-within:border-accent">
+                  <input
+                    type="number"
+                    id="target-roas-input"
+                    min="1.0"
+                    max="20.0"
+                    step="0.1"
+                    value="3.5"
+                    class="w-16 bg-transparent text-right font-mono text-sm font-semibold text-white outline-none"
+                    oninput="recalculateReverseEngine()"
+                  />
+                  <span class="text-xs text-slate-400 font-mono font-medium">x</span>
+                </div>
+              </div>
+
+              <!-- ROAS Milestones Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="bg-surface-subtle border border-border rounded-lg p-3 space-y-1">
+                  <div class="text-[11px] text-slate-400">Required Conversion Rate</div>
+                  <div class="font-mono text-base font-bold text-accent" id="rev-roas-req-cvr">5.18%</div>
+                  <div class="text-[10px] text-slate-400">At current CPC & AOV</div>
+                </div>
+
+                <div class="bg-surface-subtle border border-border rounded-lg p-3 space-y-1">
+                  <div class="text-[11px] text-slate-400">Max Allowable CPC</div>
+                  <div class="font-mono text-base font-bold text-accent" id="rev-roas-req-cpc">$1.14</div>
+                  <div class="text-[10px] text-slate-400">At current CVR & AOV</div>
+                </div>
+
+                <div class="bg-surface-subtle border border-border rounded-lg p-3 space-y-1">
+                  <div class="text-[11px] text-slate-400">Required AOV / LTV</div>
+                  <div class="font-mono text-base font-bold text-white" id="rev-roas-req-aov">$202.34</div>
+                  <div class="text-[10px] text-slate-400">At current traffic cost</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer Information -->
+    <footer class="border-t border-border mt-12 py-6 px-4 lg:px-8 text-xs text-slate-500 bg-canvas no-print">
+      <div class="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <span>Ad Spend & ROAS / CAC Scenario Planner</span>
+          <span aria-hidden="true">·</span>
+          <span>Zero External Backend Dependencies</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <span>Formulas: Standard Direct Contribution & Blended CAC</span>
+          <span aria-hidden="true">·</span>
+          <button onclick="localStorage.removeItem('ad_spend_scenario_v2'); location.reload();" class="hover:text-slate-300 underline underline-offset-2">Purge Local Cache</button>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Executive Scenario Briefing & PDF Export Modal -->
+    <div
+      id="executive-report-modal"
+      class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div class="bg-surface border border-border rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+        <!-- Modal Sticky Top Bar -->
+        <div class="flex items-center justify-between px-5 py-3.5 border-b border-border bg-surface-subtle shrink-0">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded bg-surface border border-border flex items-center justify-center text-accent">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div>
+              <h3 id="modal-title" class="text-sm font-semibold text-white">Executive Scenario Plan & PDF Export</h3>
+              <p class="text-[11px] text-slate-400">Ready for C-suite review, investor updates, or PDF download</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              onclick="copyExecutiveSummary()"
+              class="px-2.5 py-1.5 text-xs font-medium text-slate-300 bg-surface border border-border rounded-lg hover:text-white hover:bg-surface-elevated transition-colors flex items-center gap-1.5"
+              title="Copy executive briefing text"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3" />
+              </svg>
+              <span class="hidden sm:inline">Copy Text</span>
+            </button>
+
+            <button
+              onclick="triggerPrintMemo()"
+              class="px-2.5 py-1.5 text-xs font-medium text-slate-300 bg-surface border border-border rounded-lg hover:text-white hover:bg-surface-elevated transition-colors flex items-center gap-1.5"
+              title="Open browser print dialog"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              <span class="hidden sm:inline">Print Dialog</span>
+            </button>
+
+            <button
+              onclick="generateAndDownloadPDF()"
+              class="px-3 py-1.5 text-xs font-medium text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors flex items-center gap-1.5 shadow-sm shadow-accent/20"
+              title="Generate and download PDF file"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Download PDF</span>
+            </button>
+
+            <button
+              onclick="closeExecutiveModal()"
+              class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-surface-elevated transition-colors ml-1"
+              aria-label="Close modal"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Modal Scrollable Preview Area -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-8 bg-canvas/60">
+          <!-- The printable document container (A4-proportioned paper view) -->
+          <div
+            id="printable-executive-report"
+            class="bg-white text-slate-900 p-6 sm:p-10 rounded-xl shadow-xl border border-slate-200 max-w-3xl mx-auto space-y-6 font-sans text-xs"
+          >
+            <!-- Letterhead -->
+            <div class="flex items-start justify-between border-b border-slate-300 pb-5">
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
+                    $
+                  </div>
+                  <h1 class="text-xl font-bold text-slate-900 tracking-tight">AD SPEND & UNIT ECONOMICS EXECUTIVE PLAN</h1>
+                </div>
+                <p class="text-xs text-slate-600">Scenario Sensitivity, Payback & ROAS Breakeven Model</p>
+              </div>
+              <div class="text-right text-[11px] text-slate-500 font-mono space-y-0.5">
+                <div>Date: <span id="memo-date" class="font-semibold text-slate-800"></span></div>
+                <div>Currency: <span id="memo-currency" class="font-semibold text-slate-800">USD ($)</span></div>
+                <div>Status: <span class="text-emerald-700 font-semibold">Active Model</span></div>
+              </div>
+            </div>
+
+            <!-- Executive KPI Summary Cards Grid -->
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">1. Baseline Executive Summary</h2>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <div class="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Monthly Ad Budget</div>
+                  <div class="text-base font-bold font-mono text-slate-900 mt-1" id="memo-spend">$10,000</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5" id="memo-traffic-cost">CPC: $1.85</div>
+                </div>
+
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <div class="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Blended CAC</div>
+                  <div class="text-base font-bold font-mono text-slate-900 mt-1" id="memo-cac">$57.81</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5" id="memo-cac-cap">Cap: $87.50</div>
+                </div>
+
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <div class="text-[10px] text-slate-500 uppercase tracking-wider font-medium">Gross ROAS</div>
+                  <div class="text-base font-bold font-mono text-slate-900 mt-1" id="memo-roas">2.16x</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5" id="memo-breakeven-roas">Min Break-Even: 1.43x</div>
+                </div>
+
+                <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <div class="text-[10px] text-emerald-800 uppercase tracking-wider font-medium">Net Monthly Profit</div>
+                  <div class="text-base font-bold font-mono text-emerald-700 mt-1" id="memo-profit">+$5,135</div>
+                  <div class="text-[10px] text-emerald-800 mt-0.5" id="memo-margin">Net Margin: 23.8%</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Scenario Sensitivity Comparison Matrix -->
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">2. Three-Scenario Sensitivity Matrix</h2>
+              <div class="border border-slate-200 rounded-lg overflow-hidden">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+                      <th class="py-2 px-3">Performance Metric</th>
+                      <th class="py-2 px-3 text-right">Conservative (-20% CVR)</th>
+                      <th class="py-2 px-3 text-right bg-slate-200/60 font-bold text-slate-900">Baseline Plan</th>
+                      <th class="py-2 px-3 text-right text-emerald-800">Optimized (+25% CVR)</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200 font-mono text-[11px] text-slate-700">
+                    <tr>
+                      <td class="py-1.5 px-3 font-sans text-slate-800">Ad Spend</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-cons-spend">$10,000</td>
+                      <td class="py-1.5 px-3 text-right bg-slate-50 font-semibold text-slate-900" id="memo-matrix-base-spend">$10,000</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-opt-spend">$10,000</td>
+                    </tr>
+                    <tr>
+                      <td class="py-1.5 px-3 font-sans text-slate-800">Paid Customers</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-cons-cust">120</td>
+                      <td class="py-1.5 px-3 text-right bg-slate-50 font-semibold text-slate-900" id="memo-matrix-base-cust">173</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-opt-cust">240</td>
+                    </tr>
+                    <tr>
+                      <td class="py-1.5 px-3 font-sans text-slate-800">Blended CAC</td>
+                      <td class="py-1.5 px-3 text-right text-rose-700 font-semibold" id="memo-matrix-cons-cac">$83.10</td>
+                      <td class="py-1.5 px-3 text-right bg-slate-50 font-semibold text-slate-900" id="memo-matrix-base-cac">$57.81</td>
+                      <td class="py-1.5 px-3 text-right text-emerald-700 font-semibold" id="memo-matrix-opt-cac">$41.62</td>
+                    </tr>
+                    <tr>
+                      <td class="py-1.5 px-3 font-sans text-slate-800">Gross Revenue</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-cons-rev">$15,039</td>
+                      <td class="py-1.5 px-3 text-right bg-slate-50 font-semibold text-slate-900" id="memo-matrix-base-rev">$21,622</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-opt-rev">$30,030</td>
+                    </tr>
+                    <tr>
+                      <td class="py-1.5 px-3 font-sans text-slate-800">Gross ROAS</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-cons-groas">1.50x</td>
+                      <td class="py-1.5 px-3 text-right bg-slate-50 font-semibold text-slate-900" id="memo-matrix-base-groas">2.16x</td>
+                      <td class="py-1.5 px-3 text-right text-emerald-700 font-semibold" id="memo-matrix-opt-groas">3.00x</td>
+                    </tr>
+                    <tr>
+                      <td class="py-1.5 px-3 font-sans text-slate-800">Net ROAS (Margin / Spend)</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-cons-nroas">1.05x</td>
+                      <td class="py-1.5 px-3 text-right bg-slate-50 font-semibold text-slate-900" id="memo-matrix-base-nroas">1.51x</td>
+                      <td class="py-1.5 px-3 text-right text-emerald-700" id="memo-matrix-opt-nroas">2.10x</td>
+                    </tr>
+                    <tr class="bg-slate-100/70 font-semibold text-xs">
+                      <td class="py-2 px-3 font-sans text-slate-900">Net Monthly Profit</td>
+                      <td class="py-2 px-3 text-right" id="memo-matrix-cons-profit">+$527</td>
+                      <td class="py-2 px-3 text-right bg-slate-200/80 font-bold text-slate-900" id="memo-matrix-base-profit">+$5,135</td>
+                      <td class="py-2 px-3 text-right text-emerald-800 font-bold" id="memo-matrix-opt-profit">+$11,021</td>
+                    </tr>
+                    <tr>
+                      <td class="py-1.5 px-3 font-sans text-slate-800">Unit Payback Margin / Buyer</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-cons-payback">+$4.40</td>
+                      <td class="py-1.5 px-3 text-right bg-slate-50 font-semibold text-slate-900" id="memo-matrix-base-payback">+$29.69</td>
+                      <td class="py-1.5 px-3 text-right text-emerald-700" id="memo-matrix-opt-payback">+$45.88</td>
+                    </tr>
+                    <tr class="bg-slate-50 text-[10px] text-slate-600">
+                      <td class="py-1.5 px-3 font-sans">Break-Even Orders Needed</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-cons-beorders">115</td>
+                      <td class="py-1.5 px-3 text-right font-semibold text-slate-900" id="memo-matrix-base-beorders">115</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-opt-beorders">115</td>
+                    </tr>
+                    <tr class="bg-slate-50 text-[10px] text-slate-600">
+                      <td class="py-1.5 px-3 font-sans">Break-Even Gross ROAS Cap</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-cons-beroas">1.43x</td>
+                      <td class="py-1.5 px-3 text-right font-semibold text-slate-900" id="memo-matrix-base-beroas">1.43x</td>
+                      <td class="py-1.5 px-3 text-right" id="memo-matrix-opt-beroas">1.43x</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Unit Economics & Reverse-Engineering Insights -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div class="border border-slate-200 rounded-lg p-3 space-y-1.5 bg-slate-50/50">
+                <h3 class="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Unit Economics Baseline</h3>
+                <div class="space-y-1 text-[11px] text-slate-600">
+                  <div class="flex justify-between">
+                    <span>Average Order Value (AOV):</span>
+                    <span class="font-mono font-semibold text-slate-800" id="memo-unit-aov">$125.00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>COGS / Delivery Margin:</span>
+                    <span class="font-mono font-semibold text-slate-800" id="memo-unit-cogs">30.0% ($37.50)</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Gross Margin before Ads:</span>
+                    <span class="font-mono font-semibold text-slate-800" id="memo-unit-gross">$87.50 (70%)</span>
+                  </div>
+                  <div class="flex justify-between border-t border-slate-200 pt-1 font-semibold text-slate-900">
+                    <span>Max Allowable CAC:</span>
+                    <span class="font-mono text-emerald-800" id="memo-unit-maxcac">$87.50</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="border border-slate-200 rounded-lg p-3 space-y-1.5 bg-slate-50/50">
+                <h3 class="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Target Reverse-Engineering</h3>
+                <div class="space-y-1 text-[11px] text-slate-600">
+                  <div class="flex justify-between">
+                    <span>Current Net Profit:</span>
+                    <span class="font-mono font-semibold text-slate-800" id="memo-rev-current">$5,135</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Target Goal:</span>
+                    <span class="font-mono font-semibold text-blue-700" id="memo-rev-target">$15,000 Net Profit</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Required Conversion Rate:</span>
+                    <span class="font-mono font-semibold text-slate-800" id="memo-rev-cvr">5.26%</span>
+                  </div>
+                  <div class="flex justify-between border-t border-slate-200 pt-1 font-semibold text-slate-900">
+                    <span>Max Allowable CPC:</span>
+                    <span class="font-mono text-blue-800" id="memo-rev-cpc">$1.12</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sign-Off & Confidentiality Footer -->
+            <div class="pt-4 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+              <div>Ad Spend & ROAS FinTech Engine · Confidential Document</div>
+              <div>Generated Client-Side · Zero Server Telemetry</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 pointer-events-none flex flex-col gap-2"></div>
+
+    <!-- Application Script Block (Vanilla Modern JS ES6+) -->
+    <script>
+      /* =========================================================
+       * 1. APP STATE & CONFIGURATION
+       * ========================================================= */
+      const DEFAULT_STATE = {
+        spend: 10000,
+        trafficMode: 'cpc', // 'cpc' or 'cpm'
+        cpc: 1.85,
+        cpm: 22.0,
+        ctr: 1.2,
+        convRate: 3.2,
+        closeRate: 100,
+        aov: 125,
+        cogsRate: 30,
+        currency: 'USD',
+        reverseMode: 'profit',
+        targetProfit: 15000,
+        targetROAS: 3.5
+      };
+
+      const PRESETS = {
+        dtc: {
+          spend: 12500,
+          trafficMode: 'cpc',
+          cpc: 1.65,
+          convRate: 3.4,
+          closeRate: 100,
+          aov: 95,
+          cogsRate: 35
+        },
+        saas: {
+          spend: 25000,
+          trafficMode: 'cpc',
+          cpc: 4.80,
+          convRate: 5.0, // visitor to lead
+          closeRate: 12, // lead to paid customer
+          aov: 2400,
+          cogsRate: 15
+        },
+        highticket: {
+          spend: 15000,
+          trafficMode: 'cpc',
+          cpc: 3.20,
+          convRate: 4.0,
+          closeRate: 20,
+          aov: 1800,
+          cogsRate: 20
+        },
+        app: {
+          spend: 6000,
+          trafficMode: 'cpc',
+          cpc: 0.65,
+          convRate: 7.5,
+          closeRate: 35,
+          aov: 45,
+          cogsRate: 10
+        }
+      };
+
+      const CURRENCIES = {
+        USD: { symbol: '$', code: 'USD', locale: 'en-US' },
+        EUR: { symbol: '€', code: 'EUR', locale: 'de-DE' },
+        GBP: { symbol: '£', code: 'GBP', locale: 'en-GB' },
+        INR: { symbol: '₹', code: 'INR', locale: 'en-IN' }
+      };
+
+      let state = { ...DEFAULT_STATE };
+      let sensitivityChart = null;
+
+      /* =========================================================
+       * 2. NUMBER FORMATTING UTILITIES (Intl Guardrails)
+       * ========================================================= */
+      function getCurrencyConfig() {
+        return CURRENCIES[state.currency] || CURRENCIES.USD;
+      }
+
+      function formatCurrency(val, precision = 2) {
+        if (!isFinite(val) || isNaN(val)) return '0.00';
+        const cfg = getCurrencyConfig();
+        return new Intl.NumberFormat(cfg.locale, {
+          style: 'currency',
+          currency: cfg.code,
+          minimumFractionDigits: precision,
+          maximumFractionDigits: precision
+        }).format(val);
+      }
+
+      function formatCurrencyShort(val) {
+        if (!isFinite(val) || isNaN(val)) return '0';
+        const cfg = getCurrencyConfig();
+        if (Math.abs(val) >= 1000000) {
+          return `${cfg.symbol}${(val / 1000000).toFixed(1)}M`;
+        }
+        if (Math.abs(val) >= 1000) {
+          return `${cfg.symbol}${(val / 1000).toFixed(0)}k`;
+        }
+        return `${cfg.symbol}${val.toFixed(0)}`;
+      }
+
+      function formatNumber(val, decimals = 0) {
+        if (!isFinite(val) || isNaN(val)) return '0';
+        return new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals
+        }).format(val);
+      }
+
+      function formatPercent(val, decimals = 1) {
+        if (!isFinite(val) || isNaN(val)) return '0.0%';
+        return `${val.toFixed(decimals)}%`;
+      }
+
+      function formatMultiplier(val, decimals = 2) {
+        if (!isFinite(val) || isNaN(val) || val <= 0) return '0.00x';
+        return `${val.toFixed(decimals)}x`;
+      }
+
+      /* =========================================================
+       * 3. CORE FINANCIAL ENGINE
+       * ========================================================= */
+      function getEffectiveCPC(s = state) {
+        if (s.trafficMode === 'cpc') {
+          return Math.max(0.01, s.cpc);
+        } else {
+          const ctrDecimal = Math.max(0.0001, s.ctr / 100);
+          return Math.max(0.01, s.cpm / (1000 * ctrDecimal));
+        }
+      }
+
+      function calculateModel(params) {
+        const spend = Math.max(0, params.spend);
+        const cpc = Math.max(0.01, params.cpc);
+        const cvr = Math.max(0, params.convRate) / 100;
+        const close = Math.max(0, params.closeRate) / 100;
+        const aov = Math.max(0, params.aov);
+        const cogsRate = Math.max(0, Math.min(100, params.cogsRate)) / 100;
+
+        // Clicks
+        const clicks = cpc > 0 ? (spend / cpc) : 0;
+        // Total converted leads
+        const leads = clicks * cvr;
+        // Total customers
+        const customers = leads * close;
+        // Blended CAC
+        const cac = customers > 0 ? (spend / customers) : 0;
+        // Gross Revenue
+        const grossRevenue = customers * aov;
+        // Total COGS
+        const cogsTotal = grossRevenue * cogsRate;
+        // Gross Margin (Contribution margin before ad spend)
+        const grossProfit = grossRevenue - cogsTotal;
+        // Net Profit (after spend)
+        const netProfit = grossProfit - spend;
+        // Net Margin %
+        const netMarginPct = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
+        // Gross ROAS
+        const grossROAS = spend > 0 ? (grossRevenue / spend) : 0;
+        // Net ROAS (True profit return)
+        const netROAS = spend > 0 ? (grossProfit / spend) : 0;
+        // Unit payback margin (Gross margin per order - CAC)
+        const grossMarginPerOrder = aov * (1 - cogsRate);
+        const unitPaybackMargin = grossMarginPerOrder - cac;
+        // Break-even Gross ROAS
+        const breakEvenROAS = (1 - cogsRate) > 0 ? (1 / (1 - cogsRate)) : 0;
+        // Break-even CAC
+        const breakEvenCAC = grossMarginPerOrder;
+
+        return {
+          spend,
+          cpc,
+          cvr,
+          close,
+          aov,
+          cogsRate,
+          clicks,
+          leads,
+          customers,
+          cac,
+          grossRevenue,
+          cogsTotal,
+          grossProfit,
+          netProfit,
+          netMarginPct,
+          grossROAS,
+          netROAS,
+          grossMarginPerOrder,
+          unitPaybackMargin,
+          breakEvenROAS,
+          breakEvenCAC
+        };
+      }
+
+      /* =========================================================
+       * 4. UI UPDATE & RENDERING
+       * ========================================================= */
+      function updateAllViews() {
+        const effectiveCPC = getEffectiveCPC();
+        const baseModel = calculateModel({
+          spend: state.spend,
+          cpc: effectiveCPC,
+          convRate: state.convRate,
+          closeRate: state.closeRate,
+          aov: state.aov,
+          cogsRate: state.cogsRate
+        });
+
+        // 1. Update Unit Economics Benchmark Card
+        document.getElementById('unit-gross-margin').textContent = 
+          `${formatCurrency(baseModel.grossMarginPerOrder)} (${((1 - (state.cogsRate / 100)) * 100).toFixed(0)}%)`;
+        document.getElementById('unit-max-allowable-cac').textContent = formatCurrency(baseModel.breakEvenCAC);
+        document.getElementById('unit-breakeven-roas').textContent = formatMultiplier(baseModel.breakEvenROAS);
+        
+        const paybackElem = document.getElementById('unit-payback-margin');
+        paybackElem.textContent = (baseModel.unitPaybackMargin >= 0 ? '+' : '') + formatCurrency(baseModel.unitPaybackMargin);
+        paybackElem.className = `font-mono text-sm font-semibold mt-0.5 ${baseModel.unitPaybackMargin >= 0 ? 'text-profit' : 'text-loss'}`;
+
+        // 2. Update Baseline Stat Cards
+        document.getElementById('stat-cac').textContent = formatCurrency(baseModel.cac);
+        const cacTag = document.getElementById('cac-status-tag');
+        if (baseModel.cac <= baseModel.breakEvenCAC) {
+          cacTag.textContent = 'Safe Margin';
+          cacTag.className = 'font-mono font-medium text-profit';
+        } else {
+          cacTag.textContent = 'Unprofitable';
+          cacTag.className = 'font-mono font-medium text-loss';
+        }
+
+        document.getElementById('stat-gross-roas').textContent = formatMultiplier(baseModel.grossROAS);
+        document.getElementById('stat-breakeven-roas-badge').textContent = formatMultiplier(baseModel.breakEvenROAS);
+
+        const netProfitElem = document.getElementById('stat-net-profit');
+        netProfitElem.textContent = (baseModel.netProfit >= 0 ? '+' : '') + formatCurrency(baseModel.netProfit);
+        netProfitElem.className = `font-mono text-xl sm:text-2xl font-bold tracking-tight ${baseModel.netProfit >= 0 ? 'text-profit' : 'text-loss'}`;
+
+        const netMarginElem = document.getElementById('stat-net-margin');
+        netMarginElem.textContent = formatPercent(baseModel.netMarginPct);
+        netMarginElem.className = `font-mono font-medium ${baseModel.netMarginPct >= 0 ? 'text-profit' : 'text-loss'}`;
+
+        document.getElementById('stat-gross-revenue').textContent = formatCurrency(baseModel.grossRevenue);
+        document.getElementById('stat-customers').textContent = formatNumber(Math.round(baseModel.customers));
+
+        // 3. Update 3-Scenario Matrix
+        // Conservative: -20% CVR, +15% CPC
+        const consModel = calculateModel({
+          spend: state.spend,
+          cpc: effectiveCPC * 1.15,
+          convRate: state.convRate * 0.80,
+          closeRate: state.closeRate,
+          aov: state.aov,
+          cogsRate: state.cogsRate
+        });
+
+        // Optimized: +25% CVR, -10% CPC
+        const optModel = calculateModel({
+          spend: state.spend,
+          cpc: effectiveCPC * 0.90,
+          convRate: state.convRate * 1.25,
+          closeRate: state.closeRate,
+          aov: state.aov,
+          cogsRate: state.cogsRate
+        });
+
+        // Matrix Row Updates
+        renderMatrixRow('matrix-cons-clicks', 'matrix-base-clicks', 'matrix-opt-clicks',
+          formatNumber(Math.round(consModel.clicks)),
+          formatNumber(Math.round(baseModel.clicks)),
+          formatNumber(Math.round(optModel.clicks))
+        );
+
+        renderMatrixRow('matrix-cons-cust', 'matrix-base-cust', 'matrix-opt-cust',
+          formatNumber(Math.round(consModel.customers)),
+          formatNumber(Math.round(baseModel.customers)),
+          formatNumber(Math.round(optModel.customers))
+        );
+
+        renderMatrixRow('matrix-cons-cac', 'matrix-base-cac', 'matrix-opt-cac',
+          formatCurrency(consModel.cac),
+          formatCurrency(baseModel.cac),
+          formatCurrency(optModel.cac)
+        );
+
+        renderMatrixRow('matrix-cons-rev', 'matrix-base-rev', 'matrix-opt-rev',
+          formatCurrency(consModel.grossRevenue),
+          formatCurrency(baseModel.grossRevenue),
+          formatCurrency(optModel.grossRevenue)
+        );
+
+        renderMatrixRow('matrix-cons-groas', 'matrix-base-groas', 'matrix-opt-groas',
+          formatMultiplier(consModel.grossROAS),
+          formatMultiplier(baseModel.grossROAS),
+          formatMultiplier(optModel.grossROAS)
+        );
+
+        renderMatrixRow('matrix-cons-nroas', 'matrix-base-nroas', 'matrix-opt-nroas',
+          formatMultiplier(consModel.netROAS),
+          formatMultiplier(baseModel.netROAS),
+          formatMultiplier(optModel.netROAS)
+        );
+
+        // Net Profit row styling
+        const consProfitEl = document.getElementById('matrix-cons-profit');
+        consProfitEl.textContent = (consModel.netProfit >= 0 ? '+' : '') + formatCurrency(consModel.netProfit);
+        consProfitEl.className = `py-3 px-4 text-right font-semibold ${consModel.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+        const baseProfitEl = document.getElementById('matrix-base-profit');
+        baseProfitEl.textContent = (baseModel.netProfit >= 0 ? '+' : '') + formatCurrency(baseModel.netProfit);
+        baseProfitEl.className = `py-3 px-4 text-right bg-accent/10 border-x border-border text-base font-semibold ${baseModel.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+        const optProfitEl = document.getElementById('matrix-opt-profit');
+        optProfitEl.textContent = (optModel.netProfit >= 0 ? '+' : '') + formatCurrency(optModel.netProfit);
+        optProfitEl.className = `py-3 px-4 text-right text-base font-semibold ${optModel.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+        // Payback Row
+        const consPayEl = document.getElementById('matrix-cons-payback');
+        consPayEl.textContent = (consModel.unitPaybackMargin >= 0 ? '+' : '') + formatCurrency(consModel.unitPaybackMargin);
+        consPayEl.className = `py-2.5 px-4 text-right ${consModel.unitPaybackMargin >= 0 ? 'text-slate-300' : 'text-rose-400'}`;
+
+        const basePayEl = document.getElementById('matrix-base-payback');
+        basePayEl.textContent = (baseModel.unitPaybackMargin >= 0 ? '+' : '') + formatCurrency(baseModel.unitPaybackMargin);
+        basePayEl.className = `py-2.5 px-4 text-right bg-accent/5 border-x border-border ${baseModel.unitPaybackMargin >= 0 ? 'text-white' : 'text-rose-400'}`;
+
+        const optPayEl = document.getElementById('matrix-opt-payback');
+        optPayEl.textContent = (optModel.unitPaybackMargin >= 0 ? '+' : '') + formatCurrency(optModel.unitPaybackMargin);
+        optPayEl.className = `py-2.5 px-4 text-right ${optModel.unitPaybackMargin >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+        // Break-Even ROAS Threshold Row
+        renderMatrixRow('matrix-cons-beroas', 'matrix-base-beroas', 'matrix-opt-beroas',
+          formatMultiplier(consModel.breakEvenROAS),
+          formatMultiplier(baseModel.breakEvenROAS),
+          formatMultiplier(optModel.breakEvenROAS)
+        );
+
+        // Break-Even Orders Needed Row
+        renderMatrixRow('matrix-cons-beorders', 'matrix-base-beorders', 'matrix-opt-beorders',
+          formatNumber(consModel.grossMarginPerOrder > 0 ? Math.ceil(consModel.spend / consModel.grossMarginPerOrder) : 0),
+          formatNumber(baseModel.grossMarginPerOrder > 0 ? Math.ceil(baseModel.spend / baseModel.grossMarginPerOrder) : 0),
+          formatNumber(optModel.grossMarginPerOrder > 0 ? Math.ceil(optModel.spend / optModel.grossMarginPerOrder) : 0)
+        );
+
+        // Break-Even Gross Revenue Target Row
+        renderMatrixRow('matrix-cons-berev', 'matrix-base-berev', 'matrix-opt-berev',
+          formatCurrency((1 - consModel.cogsRate) > 0 ? consModel.spend / (1 - consModel.cogsRate) : 0),
+          formatCurrency((1 - baseModel.cogsRate) > 0 ? baseModel.spend / (1 - baseModel.cogsRate) : 0),
+          formatCurrency((1 - optModel.cogsRate) > 0 ? optModel.spend / (1 - optModel.cogsRate) : 0)
+        );
+
+        // 4. Update Reverse-Engineer Engine
+        recalculateReverseEngine();
+
+        // 5. Update Sensitivity Curve Chart
+        updateChart(baseModel, effectiveCPC);
+
+        // 6. Update Currency Symbol Prefixes in UI
+        const curr = getCurrencyConfig();
+        document.querySelectorAll('.curr-symbol').forEach(el => {
+          el.textContent = curr.symbol;
+        });
+
+        // 7. Sync the Executive Printable Report Document
+        updatePrintableReport(baseModel, consModel, optModel, effectiveCPC);
+
+        // 8. Save to localStorage
+        saveToStorage();
+      }
+
+      function renderMatrixRow(idCons, idBase, idOpt, valCons, valBase, valOpt) {
+        document.getElementById(idCons).textContent = valCons;
+        document.getElementById(idBase).textContent = valBase;
+        document.getElementById(idOpt).textContent = valOpt;
+      }
+
+      /* =========================================================
+       * 5. REVERSE-ENGINEER CALCULATOR
+       * ========================================================= */
+      function recalculateReverseEngine() {
+        const effectiveCPC = getEffectiveCPC();
+        const close = Math.max(0.01, state.closeRate) / 100;
+        const aov = Math.max(1, state.aov);
+        const cogsRate = Math.max(0, state.cogsRate) / 100;
+        const grossMarginPerOrder = aov * (1 - cogsRate);
+        const spend = Math.max(100, state.spend);
+
+        if (state.reverseMode === 'profit') {
+          const targetProfit = parseFloat(document.getElementById('target-profit-input').value) || 0;
+          // Target Gross Profit required = Target Net Profit + Ad Spend
+          const requiredGrossProfit = targetProfit + spend;
+          // Required Customers = requiredGrossProfit / grossMarginPerOrder
+          const requiredCustomers = grossMarginPerOrder > 0 ? (requiredGrossProfit / grossMarginPerOrder) : 0;
+          // Required Clicks = spend / effectiveCPC
+          const clicks = effectiveCPC > 0 ? (spend / effectiveCPC) : 0;
+          // Required CVR = (requiredCustomers / close) / clicks
+          const reqCVR = clicks > 0 && close > 0 ? ((requiredCustomers / close) / clicks) * 100 : 0;
+
+          const cvrElem = document.getElementById('rev-req-cvr');
+          const cvrDeltaElem = document.getElementById('rev-cvr-delta');
+          if (reqCVR > 0 && reqCVR <= 100) {
+            cvrElem.textContent = formatPercent(reqCVR, 2);
+            const delta = reqCVR - state.convRate;
+            cvrDeltaElem.textContent = `${delta >= 0 ? '+' : ''}${delta.toFixed(2)}% vs current (${state.convRate}%)`;
+            cvrDeltaElem.className = delta > 0 ? 'text-[10px] text-amber-400' : 'text-[10px] text-emerald-400';
+          } else {
+            cvrElem.textContent = 'Unrealistic';
+            cvrDeltaElem.textContent = 'Margin too low to hit target';
+            cvrDeltaElem.className = 'text-[10px] text-rose-400';
+          }
+
+          // Max allowable CPC to hit target profit at current CVR
+          // Profit = (Clicks * CVR * Close * grossMarginPerOrder) - Spend
+          // TargetProfit + Spend = (Spend / CPC) * CVR * Close * grossMarginPerOrder
+          // CPC = Spend * CVR * Close * grossMarginPerOrder / (TargetProfit + Spend)
+          const currentCVRDecimal = state.convRate / 100;
+          const reqCPC = requiredGrossProfit > 0 
+            ? (spend * currentCVRDecimal * close * grossMarginPerOrder) / requiredGrossProfit 
+            : 0;
+
+          const cpcElem = document.getElementById('rev-req-cpc');
+          const cpcDeltaElem = document.getElementById('rev-cpc-delta');
+          if (reqCPC > 0) {
+            cpcElem.textContent = formatCurrency(reqCPC);
+            const deltaCPC = reqCPC - effectiveCPC;
+            cpcDeltaElem.textContent = `${deltaCPC >= 0 ? '+' : ''}${formatCurrency(deltaCPC)} vs current (${formatCurrency(effectiveCPC)})`;
+            cpcDeltaElem.className = deltaCPC < 0 ? 'text-[10px] text-amber-400' : 'text-[10px] text-emerald-400';
+          } else {
+            cpcElem.textContent = '$0.00';
+            cpcDeltaElem.textContent = 'Unattainable target';
+            cpcDeltaElem.className = 'text-[10px] text-rose-400';
+          }
+
+          // Required Spend at current efficiency (if unit payback is positive)
+          // Unit Profit per Click = (CVR * Close * grossMarginPerOrder) - CPC
+          const unitProfitPerClick = (currentCVRDecimal * close * grossMarginPerOrder) - effectiveCPC;
+          const spendElem = document.getElementById('rev-req-spend');
+          const spendDeltaElem = document.getElementById('rev-spend-delta');
+          if (unitProfitPerClick > 0) {
+            const requiredClicks = targetProfit / unitProfitPerClick;
+            const reqBudget = requiredClicks * effectiveCPC;
+            spendElem.textContent = formatCurrency(reqBudget, 0);
+            spendDeltaElem.textContent = `At current efficiency (${formatCurrency(unitProfitPerClick)} net/click)`;
+            spendDeltaElem.className = 'text-[10px] text-slate-400';
+          } else {
+            spendElem.textContent = 'N/A';
+            spendDeltaElem.textContent = 'Negative margin: more spend increases loss';
+            spendDeltaElem.className = 'text-[10px] text-rose-400';
+          }
+
+        } else {
+          // Mode: Target ROAS
+          const targetROAS = parseFloat(document.getElementById('target-roas-input').value) || 0;
+          // Target Gross ROAS = Revenue / Spend = (Customers * AOV) / Spend
+          // ROAS = ( (Spend / CPC) * CVR * Close * AOV ) / Spend = (CVR * Close * AOV) / CPC
+          // 1. Required CVR = (targetROAS * CPC) / (Close * AOV)
+          const reqCVR = (close * aov) > 0 ? ((targetROAS * effectiveCPC) / (close * aov)) * 100 : 0;
+          document.getElementById('rev-roas-req-cvr').textContent = reqCVR <= 100 ? formatPercent(reqCVR, 2) : 'Exceeds 100%';
+
+          // 2. Max allowable CPC = (CVR * Close * AOV) / targetROAS
+          const reqCPC = targetROAS > 0 ? ((state.convRate / 100) * close * aov) / targetROAS : 0;
+          document.getElementById('rev-roas-req-cpc').textContent = formatCurrency(reqCPC);
+
+          // 3. Required AOV = (targetROAS * CPC) / (CVR * Close)
+          const cvrDecimal = state.convRate / 100;
+          const reqAOV = (cvrDecimal * close) > 0 ? (targetROAS * effectiveCPC) / (cvrDecimal * close) : 0;
+          document.getElementById('rev-roas-req-aov').textContent = formatCurrency(reqAOV);
+        }
+      }
+
+      function switchReverseMode(mode) {
+        state.reverseMode = mode;
+        const profitTab = document.getElementById('rev-tab-profit');
+        const roasTab = document.getElementById('rev-tab-roas');
+        const profitPanel = document.getElementById('rev-panel-profit');
+        const roasPanel = document.getElementById('rev-panel-roas');
+
+        if (mode === 'profit') {
+          profitTab.className = 'px-3 py-1 rounded bg-surface-elevated text-white font-medium transition-all';
+          roasTab.className = 'px-3 py-1 rounded text-slate-400 hover:text-white transition-all';
+          profitPanel.classList.remove('hidden');
+          roasPanel.classList.add('hidden');
+        } else {
+          roasTab.className = 'px-3 py-1 rounded bg-surface-elevated text-white font-medium transition-all';
+          profitTab.className = 'px-3 py-1 rounded text-slate-400 hover:text-white transition-all';
+          roasPanel.classList.remove('hidden');
+          profitPanel.classList.add('hidden');
+        }
+        recalculateReverseEngine();
+      }
+
+      /* =========================================================
+       * 6. SENSITIVITY CURVE CHART.JS INITIALIZATION
+       * ========================================================= */
+      function initChart() {
+        const ctx = document.getElementById('sensitivity-chart').getContext('2d');
+        const cfg = getCurrencyConfig();
+
+        sensitivityChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: 'Net Profit',
+                data: [],
+                borderColor: '#10B981',
+                backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                fill: true,
+                tension: 0.25,
+                borderWidth: 2.2,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#10B981'
+              },
+              {
+                label: 'Gross Revenue',
+                data: [],
+                borderColor: '#3B82F6',
+                borderDash: [4, 4],
+                fill: false,
+                tension: 0.25,
+                borderWidth: 1.8,
+                pointRadius: 0,
+                pointHoverRadius: 5
+              },
+              {
+                label: 'Ad Spend',
+                data: [],
+                borderColor: '#64748B',
+                borderDash: [2, 2],
+                fill: false,
+                tension: 0,
+                borderWidth: 1.4,
+                pointRadius: 0,
+                pointHoverRadius: 5
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                backgroundColor: '#111827',
+                titleColor: '#F3F4F6',
+                bodyColor: '#9CA3AF',
+                borderColor: '#1F2937',
+                borderWidth: 1,
+                padding: 10,
+                cornerRadius: 8,
+                titleFont: {
+                  family: 'Plus Jakarta Sans',
+                  size: 12,
+                  weight: '600'
+                },
+                bodyFont: {
+                  family: 'JetBrains Mono',
+                  size: 11
+                },
+                callbacks: {
+                  label: function(context) {
+                    const label = context.dataset.label || '';
+                    const val = context.parsed.y;
+                    return `  ${label}: ${formatCurrency(val, 0)}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: {
+                  color: 'rgba(255, 255, 255, 0.04)',
+                  drawBorder: false
+                },
+                ticks: {
+                  color: '#64748B',
+                  font: {
+                    family: 'JetBrains Mono',
+                    size: 10
+                  },
+                  maxTicksLimit: 8
+                }
+              },
+              y: {
+                grid: {
+                  color: function(context) {
+                    if (context.tick && context.tick.value === 0) {
+                      return 'rgba(244, 63, 94, 0.4)';
+                    }
+                    return 'rgba(255, 255, 255, 0.05)';
+                  },
+                  lineWidth: function(context) {
+                    return (context.tick && context.tick.value === 0) ? 1.5 : 1;
+                  },
+                  drawBorder: false
+                },
+                ticks: {
+                  color: '#64748B',
+                  font: {
+                    family: 'JetBrains Mono',
+                    size: 10
+                  },
+                  callback: function(val) {
+                    return formatCurrencyShort(val);
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      function updateChart(baseModel, effectiveCPC) {
+        if (!sensitivityChart) return;
+
+        // Generate 16 sensitivity steps from 20% of current spend to 250% of current spend
+        const currentSpend = state.spend;
+        const minStep = Math.max(500, Math.round(currentSpend * 0.2));
+        const maxStep = Math.round(currentSpend * 2.5);
+        const stepSize = Math.max(250, Math.round((maxStep - minStep) / 15));
+
+        const labels = [];
+        const profitData = [];
+        const revenueData = [];
+        const spendData = [];
+
+        for (let s = minStep; s <= maxStep; s += stepSize) {
+          const m = calculateModel({
+            spend: s,
+            cpc: effectiveCPC,
+            convRate: state.convRate,
+            closeRate: state.closeRate,
+            aov: state.aov,
+            cogsRate: state.cogsRate
+          });
+          labels.push(formatCurrencyShort(s));
+          profitData.push(Math.round(m.netProfit));
+          revenueData.push(Math.round(m.grossRevenue));
+          spendData.push(s);
+        }
+
+        sensitivityChart.data.labels = labels;
+        sensitivityChart.data.datasets[0].data = profitData;
+        sensitivityChart.data.datasets[1].data = revenueData;
+        sensitivityChart.data.datasets[2].data = spendData;
+        sensitivityChart.update('none');
+      }
+
+      /* =========================================================
+       * 7. EVENT LISTENERS & BIDIRECTIONAL SYNC
+       * ========================================================= */
+      function setupInputSync(sliderId, numberId, stateKey, parser = parseFloat) {
+        const slider = document.getElementById(sliderId);
+        const number = document.getElementById(numberId);
+
+        slider.addEventListener('input', (e) => {
+          const val = parser(e.target.value);
+          number.value = val;
+          state[stateKey] = val;
+          updateAllViews();
+        });
+
+        number.addEventListener('input', (e) => {
+          let val = parser(e.target.value);
+          if (isNaN(val)) val = 0;
+          if (slider.max && val > parseFloat(slider.max)) {
+            slider.max = Math.max(parseFloat(slider.max), Math.ceil(val * 1.2));
+          }
+          slider.value = val;
+          state[stateKey] = val;
+          updateAllViews();
+        });
+      }
+
+      function setTrafficMode(mode) {
+        state.trafficMode = mode;
+        const btnCpc = document.getElementById('toggle-mode-cpc');
+        const btnCpm = document.getElementById('toggle-mode-cpm');
+        const cpcBox = document.getElementById('cpc-direct-box');
+        const cpcSlider = document.getElementById('cpc-slider-container');
+        const cpmContainer = document.getElementById('cpm-ctr-container');
+        const modeText = document.getElementById('model-mode-text');
+
+        if (mode === 'cpc') {
+          btnCpc.className = 'px-2 py-0.5 rounded bg-surface-elevated text-white font-medium transition-all';
+          btnCpm.className = 'px-2 py-0.5 rounded text-slate-400 hover:text-white transition-all';
+          cpcBox.classList.remove('hidden');
+          cpcSlider.classList.remove('hidden');
+          cpmContainer.classList.add('hidden');
+          modeText.textContent = 'Direct CPC Mode';
+        } else {
+          btnCpm.className = 'px-2 py-0.5 rounded bg-surface-elevated text-white font-medium transition-all';
+          btnCpc.className = 'px-2 py-0.5 rounded text-slate-400 hover:text-white transition-all';
+          cpcBox.classList.add('hidden');
+          cpcSlider.classList.add('hidden');
+          cpmContainer.classList.remove('hidden');
+          modeText.textContent = 'Derived CPM + CTR Mode';
+          updateDerivedCpcDisplay();
+        }
+        updateAllViews();
+      }
+
+      function updateDerivedCpcDisplay() {
+        const derived = (state.ctr > 0) ? (state.cpm / (1000 * (state.ctr / 100))) : 0;
+        document.getElementById('display-cpm-val').textContent = state.cpm.toFixed(2);
+        document.getElementById('display-ctr-val').textContent = state.ctr.toFixed(2);
+        document.getElementById('derived-cpc-display').textContent = derived.toFixed(2);
+      }
+
+      function setCurrency(code) {
+        if (!CURRENCIES[code]) return;
+        state.currency = code;
+        document.querySelectorAll('.curr-btn').forEach(btn => {
+          if (btn.getAttribute('data-curr') === code) {
+            btn.className = 'curr-btn px-2.5 py-1 rounded font-medium transition-colors bg-surface-elevated text-white shadow-sm';
+          } else {
+            btn.className = 'curr-btn px-2.5 py-1 rounded font-medium transition-colors text-slate-400 hover:text-white';
+          }
+        });
+        document.getElementById('print-currency').textContent = `${code} (${CURRENCIES[code].symbol})`;
+        updateAllViews();
+      }
+
+      function applyPreset(presetKey) {
+        const p = PRESETS[presetKey];
+        if (!p) return;
+
+        // Update active preset button UI
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+          if (btn.getAttribute('data-preset') === presetKey) {
+            btn.className = 'preset-btn px-2.5 py-1 rounded bg-surface-elevated text-white font-medium shadow-sm transition-colors';
+          } else {
+            btn.className = 'preset-btn px-2.5 py-1 rounded text-slate-400 hover:text-white hover:bg-surface-elevated transition-colors';
+          }
+        });
+
+        state.spend = p.spend;
+        state.cpc = p.cpc;
+        state.convRate = p.convRate;
+        state.closeRate = p.closeRate;
+        state.aov = p.aov;
+        state.cogsRate = p.cogsRate;
+        state.trafficMode = 'cpc';
+
+        // Update inputs
+        document.getElementById('input-spend').value = p.spend;
+        document.getElementById('slider-spend').value = p.spend;
+        document.getElementById('input-cpc').value = p.cpc;
+        document.getElementById('slider-cpc').value = p.cpc;
+        document.getElementById('input-cvr').value = p.convRate;
+        document.getElementById('slider-cvr').value = p.convRate;
+        document.getElementById('input-close').value = p.closeRate;
+        document.getElementById('slider-close').value = p.closeRate;
+        document.getElementById('input-aov').value = p.aov;
+        document.getElementById('slider-aov').value = p.aov;
+        document.getElementById('input-cogs').value = p.cogsRate;
+        document.getElementById('slider-cogs').value = p.cogsRate;
+
+        setTrafficMode('cpc');
+        updateAllViews();
+        showToast(`Loaded ${presetKey.toUpperCase()} preset model`, 'success');
+      }
+
+      function resetToDefaults() {
+        state = { ...DEFAULT_STATE };
+        document.getElementById('input-spend').value = state.spend;
+        document.getElementById('slider-spend').value = state.spend;
+        document.getElementById('input-cpc').value = state.cpc;
+        document.getElementById('slider-cpc').value = state.cpc;
+        document.getElementById('slider-cpm').value = state.cpm;
+        document.getElementById('slider-ctr').value = state.ctr;
+        document.getElementById('input-cvr').value = state.convRate;
+        document.getElementById('slider-cvr').value = state.convRate;
+        document.getElementById('input-close').value = state.closeRate;
+        document.getElementById('slider-close').value = state.closeRate;
+        document.getElementById('input-aov').value = state.aov;
+        document.getElementById('slider-aov').value = state.aov;
+        document.getElementById('input-cogs').value = state.cogsRate;
+        document.getElementById('slider-cogs').value = state.cogsRate;
+        document.getElementById('target-profit-input').value = state.targetProfit;
+        document.getElementById('target-roas-input').value = state.targetROAS;
+
+        setTrafficMode('cpc');
+        setCurrency('USD');
+        switchReverseMode('profit');
+        updateAllViews();
+        showToast('Reset parameters to fintech defaults', 'neutral');
+      }
+
+      function switchMobileTab(tab) {
+        const panelInputs = document.getElementById('panel-inputs');
+        const panelResults = document.getElementById('panel-results');
+        const btnInputs = document.getElementById('tab-btn-inputs');
+        const btnResults = document.getElementById('tab-btn-results');
+
+        if (tab === 'inputs') {
+          panelInputs.className = 'block lg:block lg:col-span-5 space-y-6';
+          panelResults.className = 'hidden lg:block lg:col-span-7 space-y-6';
+          btnInputs.className = 'flex-1 py-1.5 text-xs font-medium rounded-md bg-surface text-white shadow-sm transition-all text-center';
+          btnResults.className = 'flex-1 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition-all text-center';
+        } else {
+          panelInputs.className = 'hidden lg:block lg:col-span-5 space-y-6';
+          panelResults.className = 'block lg:block lg:col-span-7 space-y-6';
+          btnResults.className = 'flex-1 py-1.5 text-xs font-medium rounded-md bg-surface text-white shadow-sm transition-all text-center';
+          btnInputs.className = 'flex-1 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-white transition-all text-center';
+        }
+      }
+
+      /* =========================================================
+       * 8. EXPORTS & SHARE BRIEFING
+       * ========================================================= */
+      function copyExecutiveSummary() {
+        const effectiveCPC = getEffectiveCPC();
+        const m = calculateModel({
+          spend: state.spend,
+          cpc: effectiveCPC,
+          convRate: state.convRate,
+          closeRate: state.closeRate,
+          aov: state.aov,
+          cogsRate: state.cogsRate
+        });
+
+        const cons = calculateModel({
+          spend: state.spend,
+          cpc: effectiveCPC * 1.15,
+          convRate: state.convRate * 0.8,
+          closeRate: state.closeRate,
+          aov: state.aov,
+          cogsRate: state.cogsRate
+        });
+
+        const opt = calculateModel({
+          spend: state.spend,
+          cpc: effectiveCPC * 0.9,
+          convRate: state.convRate * 1.25,
+          closeRate: state.closeRate,
+          aov: state.aov,
+          cogsRate: state.cogsRate
+        });
+
+        const text = `=====================================================
+AD SPEND & ROAS / CAC EXECUTIVE SCENARIO BRIEFING
+=====================================================
+Currency: ${state.currency} | Generated: ${new Date().toLocaleDateString()}
+
+1. BASELINE MODEL PERFORMANCE
+-----------------------------------------------------
+• Monthly Ad Budget:     ${formatCurrency(m.spend)}
+• Effective CPC:         ${formatCurrency(m.cpc)}
+• Conversion Rate:       ${m.cvr * 100}%
+• Close Rate:            ${m.close * 100}%
+• Average Order Value:   ${formatCurrency(m.aov)}
+• COGS / Variable Cost:  ${m.cogsRate * 100}%
+
+KEY OUTCOMES:
+• Total Ad Clicks:       ${formatNumber(Math.round(m.clicks))}
+• Total Paid Customers:  ${formatNumber(Math.round(m.customers))}
+• Blended CAC:           ${formatCurrency(m.cac)} (Break-even cap: ${formatCurrency(m.breakEvenCAC)})
+• Gross Revenue:         ${formatCurrency(m.grossRevenue)}
+• Gross ROAS:            ${formatMultiplier(m.grossROAS)} (Break-even: ${formatMultiplier(m.breakEvenROAS)})
+• Net ROAS:              ${formatMultiplier(m.netROAS)}
+• Net Monthly Profit:    ${formatCurrency(m.netProfit)} (Net Margin: ${formatPercent(m.netMarginPct)})
+• Unit Payback Margin:   ${formatCurrency(m.unitPaybackMargin)} / customer
+
+2. THREE-SCENARIO MATRIX COMPARISON
+-----------------------------------------------------
+Metric                Conservative      Baseline          Optimized
+-----------------------------------------------------
+Ad Clicks:            ${formatNumber(Math.round(cons.clicks)).padEnd(16)}  ${formatNumber(Math.round(m.clicks)).padEnd(16)}  ${formatNumber(Math.round(opt.clicks))}
+Acquisitions:         ${formatNumber(Math.round(cons.customers)).padEnd(16)}  ${formatNumber(Math.round(m.customers)).padEnd(16)}  ${formatNumber(Math.round(opt.customers))}
+Blended CAC:          ${formatCurrency(cons.cac).padEnd(16)}  ${formatCurrency(m.cac).padEnd(16)}  ${formatCurrency(opt.cac)}
+Gross ROAS:           ${formatMultiplier(cons.grossROAS).padEnd(16)}  ${formatMultiplier(m.grossROAS).padEnd(16)}  ${formatMultiplier(opt.grossROAS)}
+Net Profit:           ${formatCurrency(cons.netProfit).padEnd(16)}  ${formatCurrency(m.netProfit).padEnd(16)}  ${formatCurrency(opt.netProfit)}
+Payback Margin:       ${formatCurrency(cons.unitPaybackMargin).padEnd(16)}  ${formatCurrency(m.unitPaybackMargin).padEnd(16)}  ${formatCurrency(opt.unitPaybackMargin)}
+=====================================================`;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            showToast('Executive briefing copied to clipboard', 'success');
+          }).catch(() => {
+            fallbackCopy(text);
+          });
+        } else {
+          fallbackCopy(text);
+        }
+      }
+
+      function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showToast('Executive briefing copied to clipboard', 'success');
+        } catch (err) {
+          showToast('Failed to copy summary', 'error');
+        }
+        document.body.removeChild(textarea);
+      }
+
+      function exportPDFReport() {
+        openExecutiveModal();
+      }
+
+      function openExecutiveModal() {
+        const modal = document.getElementById('executive-report-modal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+        }
+      }
+
+      function closeExecutiveModal() {
+        const modal = document.getElementById('executive-report-modal');
+        if (modal) {
+          modal.classList.add('hidden');
+          document.body.style.overflow = '';
+        }
+      }
+
+      function triggerPrintMemo() {
+        document.getElementById('print-date').textContent = new Date().toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        document.getElementById('print-currency').textContent = `${state.currency} (${getCurrencyConfig().symbol})`;
+
+        try {
+          window.print();
+        } catch (err) {
+          console.warn('Browser print dialog blocked:', err);
+          showToast('Browser print blocked by iframe sandbox. Generating PDF instead...', 'neutral');
+          generateAndDownloadPDF();
+        }
+      }
+
+      function generateAndDownloadPDF() {
+        showToast('Generating executive PDF document...', 'neutral');
+        const reportElement = document.getElementById('printable-executive-report');
+        if (!reportElement) {
+          showToast('Report template not found', 'error');
+          return;
+        }
+
+        if (typeof html2pdf === 'undefined') {
+          showToast('PDF engine not yet loaded, attempting print...', 'neutral');
+          triggerPrintMemo();
+          return;
+        }
+
+        const opt = {
+          margin: [8, 6, 8, 6],
+          filename: `Ad_Spend_ROAS_Executive_Plan_${state.currency}_${new Date().toISOString().slice(0, 10)}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf()
+          .set(opt)
+          .from(reportElement)
+          .save()
+          .then(() => {
+            showToast('Executive PDF downloaded successfully', 'success');
+          })
+          .catch((err) => {
+            console.error('PDF generator error:', err);
+            showToast('PDF generation failed. Opening print fallback...', 'error');
+            triggerPrintMemo();
+          });
+      }
+
+      function updatePrintableReport(baseModel, consModel, optModel, effectiveCPC) {
+        const dateStr = new Date().toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+
+        // Letterhead & Status
+        const memoDateEl = document.getElementById('memo-date');
+        if (memoDateEl) memoDateEl.textContent = dateStr;
+        const memoCurrEl = document.getElementById('memo-currency');
+        if (memoCurrEl) memoCurrEl.textContent = `${state.currency} (${getCurrencyConfig().symbol})`;
+
+        // Baseline 4 cards
+        const memoSpend = document.getElementById('memo-spend');
+        if (memoSpend) memoSpend.textContent = formatCurrency(baseModel.spend, 0);
+        const memoTraffic = document.getElementById('memo-traffic-cost');
+        if (memoTraffic) memoTraffic.textContent = `${state.trafficMode === 'cpc' ? 'CPC' : 'Eff. CPC'}: ${formatCurrency(effectiveCPC)}`;
+
+        const memoCac = document.getElementById('memo-cac');
+        if (memoCac) memoCac.textContent = formatCurrency(baseModel.cac);
+        const memoCacCap = document.getElementById('memo-cac-cap');
+        if (memoCacCap) memoCacCap.textContent = `Cap: ${formatCurrency(baseModel.breakEvenCAC)}`;
+
+        const memoRoas = document.getElementById('memo-roas');
+        if (memoRoas) memoRoas.textContent = formatMultiplier(baseModel.grossROAS);
+        const memoBeRoas = document.getElementById('memo-breakeven-roas');
+        if (memoBeRoas) memoBeRoas.textContent = `Min Break-Even: ${formatMultiplier(baseModel.breakEvenROAS)}`;
+
+        const memoProfit = document.getElementById('memo-profit');
+        if (memoProfit) memoProfit.textContent = (baseModel.netProfit >= 0 ? '+' : '') + formatCurrency(baseModel.netProfit, 0);
+        const memoMargin = document.getElementById('memo-margin');
+        if (memoMargin) memoMargin.textContent = `Net Margin: ${formatPercent(baseModel.netMarginPct)}`;
+
+        // Memo 3-Scenario Matrix
+        renderMatrixRow('memo-matrix-cons-spend', 'memo-matrix-base-spend', 'memo-matrix-opt-spend',
+          formatCurrency(consModel.spend, 0), formatCurrency(baseModel.spend, 0), formatCurrency(optModel.spend, 0)
+        );
+        renderMatrixRow('memo-matrix-cons-cust', 'memo-matrix-base-cust', 'memo-matrix-opt-cust',
+          formatNumber(Math.round(consModel.customers)), formatNumber(Math.round(baseModel.customers)), formatNumber(Math.round(optModel.customers))
+        );
+        renderMatrixRow('memo-matrix-cons-cac', 'memo-matrix-base-cac', 'memo-matrix-opt-cac',
+          formatCurrency(consModel.cac), formatCurrency(baseModel.cac), formatCurrency(optModel.cac)
+        );
+        renderMatrixRow('memo-matrix-cons-rev', 'memo-matrix-base-rev', 'memo-matrix-opt-rev',
+          formatCurrency(consModel.grossRevenue, 0), formatCurrency(baseModel.grossRevenue, 0), formatCurrency(optModel.grossRevenue, 0)
+        );
+        renderMatrixRow('memo-matrix-cons-groas', 'memo-matrix-base-groas', 'memo-matrix-opt-groas',
+          formatMultiplier(consModel.grossROAS), formatMultiplier(baseModel.grossROAS), formatMultiplier(optModel.grossROAS)
+        );
+        renderMatrixRow('memo-matrix-cons-nroas', 'memo-matrix-base-nroas', 'memo-matrix-opt-nroas',
+          formatMultiplier(consModel.netROAS), formatMultiplier(baseModel.netROAS), formatMultiplier(optModel.netROAS)
+        );
+        renderMatrixRow('memo-matrix-cons-profit', 'memo-matrix-base-profit', 'memo-matrix-opt-profit',
+          (consModel.netProfit >= 0 ? '+' : '') + formatCurrency(consModel.netProfit, 0),
+          (baseModel.netProfit >= 0 ? '+' : '') + formatCurrency(baseModel.netProfit, 0),
+          (optModel.netProfit >= 0 ? '+' : '') + formatCurrency(optModel.netProfit, 0)
+        );
+        renderMatrixRow('memo-matrix-cons-payback', 'memo-matrix-base-payback', 'memo-matrix-opt-payback',
+          (consModel.unitPaybackMargin >= 0 ? '+' : '') + formatCurrency(consModel.unitPaybackMargin),
+          (baseModel.unitPaybackMargin >= 0 ? '+' : '') + formatCurrency(baseModel.unitPaybackMargin),
+          (optModel.unitPaybackMargin >= 0 ? '+' : '') + formatCurrency(optModel.unitPaybackMargin)
+        );
+        renderMatrixRow('memo-matrix-cons-beorders', 'memo-matrix-base-beorders', 'memo-matrix-opt-beorders',
+          formatNumber(consModel.grossMarginPerOrder > 0 ? Math.ceil(consModel.spend / consModel.grossMarginPerOrder) : 0),
+          formatNumber(baseModel.grossMarginPerOrder > 0 ? Math.ceil(baseModel.spend / baseModel.grossMarginPerOrder) : 0),
+          formatNumber(optModel.grossMarginPerOrder > 0 ? Math.ceil(optModel.spend / optModel.grossMarginPerOrder) : 0)
+        );
+        renderMatrixRow('memo-matrix-cons-beroas', 'memo-matrix-base-beroas', 'memo-matrix-opt-beroas',
+          formatMultiplier(consModel.breakEvenROAS), formatMultiplier(baseModel.breakEvenROAS), formatMultiplier(optModel.breakEvenROAS)
+        );
+
+        // Unit economics breakdown
+        const memoAov = document.getElementById('memo-unit-aov');
+        if (memoAov) memoAov.textContent = formatCurrency(baseModel.aov);
+        const memoCogs = document.getElementById('memo-unit-cogs');
+        if (memoCogs) memoCogs.textContent = `${(baseModel.cogsRate * 100).toFixed(1)}% (${formatCurrency(baseModel.aov * baseModel.cogsRate)})`;
+        const memoGross = document.getElementById('memo-unit-gross');
+        if (memoGross) memoGross.textContent = `${formatCurrency(baseModel.grossMarginPerOrder)} (${((1 - baseModel.cogsRate) * 100).toFixed(0)}%)`;
+        const memoMaxCac = document.getElementById('memo-unit-maxcac');
+        if (memoMaxCac) memoMaxCac.textContent = formatCurrency(baseModel.breakEvenCAC);
+
+        // Target reverse engineer
+        const memoRevCurrent = document.getElementById('memo-rev-current');
+        if (memoRevCurrent) memoRevCurrent.textContent = formatCurrency(baseModel.netProfit, 0);
+        const memoRevTarget = document.getElementById('memo-rev-target');
+        if (memoRevTarget) {
+          memoRevTarget.textContent = state.reverseMode === 'profit'
+            ? `${formatCurrency(state.targetProfit || 15000, 0)} Net Profit`
+            : `${state.targetROAS || 3.5}x Gross ROAS`;
+        }
+        const memoRevCvr = document.getElementById('memo-rev-cvr');
+        const revCvrEl = document.getElementById(state.reverseMode === 'profit' ? 'rev-req-cvr' : 'rev-roas-req-cvr');
+        if (memoRevCvr && revCvrEl) memoRevCvr.textContent = revCvrEl.textContent;
+
+        const memoRevCpc = document.getElementById('memo-rev-cpc');
+        const revCpcEl = document.getElementById(state.reverseMode === 'profit' ? 'rev-req-cpc' : 'rev-roas-req-cpc');
+        if (memoRevCpc && revCpcEl) memoRevCpc.textContent = revCpcEl.textContent;
+      }
+
+      /* =========================================================
+       * 9. TOAST NOTIFICATIONS & PERSISTENCE
+       * ========================================================= */
+      function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'animate-toast flex items-center gap-2.5 px-4 py-2.5 bg-surface-elevated border border-border text-xs font-medium text-white rounded-lg shadow-xl pointer-events-auto backdrop-blur';
+        
+        let iconSvg = '';
+        if (type === 'success') {
+          iconSvg = '<svg class="w-4 h-4 text-profit shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+        } else if (type === 'error') {
+          iconSvg = '<svg class="w-4 h-4 text-loss shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+        } else {
+          iconSvg = '<svg class="w-4 h-4 text-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+        }
+
+        toast.innerHTML = `${iconSvg}<span>${message}</span>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(10px)';
+          toast.style.transition = 'all 0.2s ease';
+          setTimeout(() => toast.remove(), 250);
+        }, 2800);
+      }
+
+      function saveToStorage() {
+        try {
+          localStorage.setItem('ad_spend_scenario_v2', JSON.stringify(state));
+        } catch (e) {
+          // LocalStorage silently ignored if disabled
+        }
+      }
+
+      function loadFromStorage() {
+        try {
+          const saved = localStorage.getItem('ad_spend_scenario_v2');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            state = { ...DEFAULT_STATE, ...parsed };
+            // Populate controls
+            document.getElementById('input-spend').value = state.spend;
+            document.getElementById('slider-spend').value = state.spend;
+            document.getElementById('input-cpc').value = state.cpc;
+            document.getElementById('slider-cpc').value = state.cpc;
+            document.getElementById('slider-cpm').value = state.cpm;
+            document.getElementById('slider-ctr').value = state.ctr;
+            document.getElementById('input-cvr').value = state.convRate;
+            document.getElementById('slider-cvr').value = state.convRate;
+            document.getElementById('input-close').value = state.closeRate;
+            document.getElementById('slider-close').value = state.closeRate;
+            document.getElementById('input-aov').value = state.aov;
+            document.getElementById('slider-aov').value = state.aov;
+            document.getElementById('input-cogs').value = state.cogsRate;
+            document.getElementById('slider-cogs').value = state.cogsRate;
+            if (state.targetProfit) document.getElementById('target-profit-input').value = state.targetProfit;
+            if (state.targetROAS) document.getElementById('target-roas-input').value = state.targetROAS;
+            setTrafficMode(state.trafficMode || 'cpc');
+            setCurrency(state.currency || 'USD');
+            switchReverseMode(state.reverseMode || 'profit');
+          }
+        } catch (e) {
+          console.warn('Failed to load local scenario state', e);
+        }
+      }
+
+      /* =========================================================
+       * 10. APP BOOTSTRAP
+       * ========================================================= */
+      window.addEventListener('DOMContentLoaded', () => {
+        // Setup Bidirectional Syncs
+        setupInputSync('slider-spend', 'input-spend', 'spend');
+        setupInputSync('slider-cpc', 'input-cpc', 'cpc');
+        setupInputSync('slider-cvr', 'input-cvr', 'convRate');
+        setupInputSync('slider-close', 'input-close', 'closeRate');
+        setupInputSync('slider-aov', 'input-aov', 'aov');
+        setupInputSync('slider-cogs', 'input-cogs', 'cogsRate');
+
+        // CPM & CTR Inputs & Sliders
+        const sliderCpm = document.getElementById('slider-cpm');
+        const inputCpm = document.getElementById('input-cpm');
+        if (sliderCpm && inputCpm) {
+          sliderCpm.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            inputCpm.value = val;
+            state.cpm = val;
+            updateDerivedCpcDisplay();
+            updateAllViews();
+          });
+          inputCpm.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value) || 0;
+            sliderCpm.value = val;
+            state.cpm = val;
+            updateDerivedCpcDisplay();
+            updateAllViews();
+          });
+        }
+
+        const sliderCtr = document.getElementById('slider-ctr');
+        const inputCtr = document.getElementById('input-ctr');
+        if (sliderCtr && inputCtr) {
+          sliderCtr.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            inputCtr.value = val.toFixed(2);
+            state.ctr = val;
+            updateDerivedCpcDisplay();
+            updateAllViews();
+          });
+          inputCtr.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value) || 0;
+            sliderCtr.value = val;
+            state.ctr = val;
+            updateDerivedCpcDisplay();
+            updateAllViews();
+          });
+        }
+
+        // Reverse Engineering Targets Sync
+        const targetProfitInput = document.getElementById('target-profit-input');
+        if (targetProfitInput) {
+          targetProfitInput.addEventListener('input', (e) => {
+            state.targetProfit = parseFloat(e.target.value) || 0;
+            recalculateReverseEngine();
+            saveToStorage();
+          });
+        }
+
+        const targetRoasInput = document.getElementById('target-roas-input');
+        if (targetRoasInput) {
+          targetRoasInput.addEventListener('input', (e) => {
+            state.targetROAS = parseFloat(e.target.value) || 0;
+            recalculateReverseEngine();
+            saveToStorage();
+          });
+        }
+
+        // Modal Backdrop & ESC Listeners
+        const modal = document.getElementById('executive-report-modal');
+        if (modal) {
+          modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+              closeExecutiveModal();
+            }
+          });
+        }
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            closeExecutiveModal();
+          }
+        });
+
+        // Initialize Chart
+        initChart();
+
+        // Load storage & initial calculate
+        loadFromStorage();
+        updateAllViews();
+      });
+    </script>
+  </body>
+</html>
